@@ -14,7 +14,7 @@ public class mainscript: MonoBehaviour {
 	float scoreGoal;
 	Animator barAnim, polAnim;
 	SpriteRenderer lvlAlph, sublvlAlph;
-	Sprite[] numberSprites;
+	Sprite[] numberSprites,wordSprites;
 	int maxWords=5;
 	int wordsIndex=0;
 	int curWord=0;
@@ -40,6 +40,7 @@ public class mainscript: MonoBehaviour {
 		fWordsRend = new SpriteRenderer[maxWords];
 
 		numberSprites = Resources.LoadAll < Sprite > ("Sprites/alphav1");
+		wordSprites = Resources.LoadAll < Sprite > ("Sprites/wordicons");
 
 		///initialize falling words gameobjects
 		for (int i = 0; i < fWords.Length; i++) {
@@ -48,7 +49,7 @@ public class mainscript: MonoBehaviour {
 			fWords [i].AddComponent<SpriteRenderer> ();
 			fWordsRend[i] = fWords[i].GetComponent<SpriteRenderer> ();
 			fWordsRend [i].enabled = false;
-			fWordsRend[i].sprite = numberSprites [33];
+			fWordsRend[i].sprite = wordSprites [0];
 			fWordsRend [i].transform.localScale = new Vector3 (.25F,.25F,1);
 		}
 		///end faling words initialzation
@@ -173,10 +174,11 @@ public class mainscript: MonoBehaviour {
 		curWord++;
 		fWordsRend [wordsIndex].enabled = true;
 		//fWordsRend[wordsIndex].transform.position = new Vector3 (Random.Range(-25.0f, -15.0f),Random.Range(15.0f, 20.0f), 0);
+		fWordsRend[wordsIndex].sprite = wordSprites [Random.Range(0,11)];
 		fWordsRend[wordsIndex].transform.position = new Vector3 (-18F,17F, 0);
-		fWordsTime[wordsIndex]= Time.time+5;
+		fWordsTime[wordsIndex]= Time.time+3;
 		fWordsHForce[wordsIndex]=Random.Range(-8.0f, 8.0f);
-		fWordsVForce[wordsIndex]=Random.Range(-10.0f, 10.0f);
+		fWordsVForce[wordsIndex]=Random.Range(-3.0f, 5.0f);
 		//initalize a new word to fall, add it to array.
 	}
 
@@ -189,36 +191,6 @@ public class mainscript: MonoBehaviour {
 
 		//print("start is " + start);
 
-		//our max is five
-		//so say index is 3, and current is 1, what happens
-		//start = 1 - 3 +1
-		// stat would equal -3
-		/*
-		what if we switch, stat = index - curword + 1
-		so start = 3 - 1 +1 that works
-		what if cur word is 3
-		so start = 3 - 3 +1
-		start would be 1 is that correct
-		it would run 1, 2, and 3
-		seems right
-		what if index is 1 and current is 3
-		stat = 1 -3 +1
-would be -1
-so -1 + 5 = 4.
-so it would run 4 0 1
-
-
-		*/
-		//consider adding a 'current amount variable
-		//could start array at current index - current amount % max words
-		// so say current amount is five, current index is 3 and max is five
-		// it would be  3 -5, so -2. -2%5 is 3.
-
-		//or, we just subtract current amount minus current index and add one.
-		// so in this case, 3-5=-2. +1 = -1.
-		//if the resulting number is negative, say -1. just subtract -1 from max.
-		//3 addition operations not so bad, probably less work then a modulo anyway.
-
 		for (int i = 0; i <curWord; i++) {
 			//print ("in loop. current word is " + curWord +" index is " + wordsIndex);
 				if (fWordsTime [start] < Time.time) {
@@ -226,12 +198,19 @@ so it would run 4 0 1
 					killWord (start);
 				killed++;
 				} else {
-				fWordsHForce [start]=fWordsHForce [start]*.9F;
-				fWordsVForce [start] = fWordsVForce [start] - 2F;
-				if ((fWordsVForce [start] * -1F) > fWordsRend [start].transform.position.y)
-					fWordsVForce [start] = fWordsRend [start].transform.position.y * -1F;
+				fWordsHForce [start]=fWordsHForce [start]*.7F;
+				fWordsVForce [start] = fWordsVForce [start] - .5F;
+				if ((fWordsVForce [start] * -1F) > fWordsRend [start].transform.position.y) {
+					if (!(fWordsRend [start].transform.position.y == 0))
+						fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],fWordsRend [start].transform.position.y*-1,0);				
+					else {
+						fWordsVForce [start] = (fWordsVForce [start])*-.6F;
+						fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],fWordsVForce[start],0);
+				
+					}
+				}
 
-					
+				else	
 				fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],fWordsVForce[start],0);
 			
 					//move object
