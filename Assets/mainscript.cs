@@ -10,8 +10,9 @@ public class mainscript: MonoBehaviour {
 	int currentLvl;
 	int subLvl;
 	bool lvlTimer = false;
-	float currentScore;
-	float scoreGoal;
+	float currentScoreInf;
+	float currentScoreMon;
+	float scoreGoalInf;
 	Animator barAnim, polAnim;
 	SpriteRenderer lvlAlph, sublvlAlph;
 	Sprite[] numberSprites,wordSprites;
@@ -22,6 +23,7 @@ public class mainscript: MonoBehaviour {
 	float[] fWordsTime;
 	float[] fWordsHForce;
 	float[] fWordsVForce;
+	float[] fWordsWorth;
 	SpriteRenderer[] fWordsRend;
 	//byte wordsCounter=0;
 	//GameObject politician;
@@ -41,7 +43,10 @@ public class mainscript: MonoBehaviour {
 
 		numberSprites = Resources.LoadAll < Sprite > ("Sprites/alphav1");
 		wordSprites = Resources.LoadAll < Sprite > ("Sprites/wordicons");
-
+		fWordsWorth = new float[wordSprites.Length];
+		for (int i = 0; i < fWordsWorth.Length; i++) {
+			fWordsWorth [i] = i;
+		}
 		///initialize falling words gameobjects
 		for (int i = 0; i < fWords.Length; i++) {
 
@@ -61,6 +66,7 @@ public class mainscript: MonoBehaviour {
 		//politician.GetComponent<BoxCollider2D> ().;
 		currentLvl = 1;
 		subLvl = 0;
+		currentScoreMon = 0f;
 		startLvlTimer();
 		print("Game initiated.");
 	}
@@ -73,7 +79,7 @@ public class mainscript: MonoBehaviour {
 	public void FixedUpdate() {
 		if (lvlTimer) {
 			if (Time.time < timeLimit) {
-				if (currentScore >= scoreGoal) {
+				if (currentScoreInf >= scoreGoalInf) {
 					lvlTimer = false;
 					if (subLvl == 5) {
 						currentLvl++;
@@ -117,20 +123,20 @@ public class mainscript: MonoBehaviour {
 	}
 
 	public void startGameScore() {
-		currentScore = 0;
-		scoreGoal = (currentLvl * 5) + (subLvl * 5);
+		currentScoreInf = 0;
+		scoreGoalInf = (currentLvl * 5) + (subLvl * 5);
 
 	}
 
 	public void addScore() {
-		currentScore++;
+		currentScoreInf++;
 		advanceBar();
 		polAnimate("talk");
-		print("clicked. score is " + currentScore);
+		print("clicked. score is " + currentScoreInf + " currnet money is " + currentScoreMon);
 	}
 
 	public void advanceBar() {
-		float barPos = currentScore / scoreGoal;
+		float barPos = currentScoreInf / scoreGoalInf;
 		//barAnim.Play ("barfill");
 		if (barPos >= 1) {
 			barAnim.Play("barfull");
@@ -174,11 +180,13 @@ public class mainscript: MonoBehaviour {
 		curWord++;
 		fWordsRend [wordsIndex].enabled = true;
 		//fWordsRend[wordsIndex].transform.position = new Vector3 (Random.Range(-25.0f, -15.0f),Random.Range(15.0f, 20.0f), 0);
-		fWordsRend[wordsIndex].sprite = wordSprites [Random.Range(0,11)];
-		fWordsRend[wordsIndex].transform.position = new Vector3 (-18F,17F, 0);
-		fWordsTime[wordsIndex]= Time.time+3;
-		fWordsHForce[wordsIndex]=Random.Range(-8.0f, 8.0f);
-		fWordsVForce[wordsIndex]=Random.Range(-3.0f, 5.0f);
+		int randInt =Random.Range(0,11);
+		fWordsRend[wordsIndex].sprite = wordSprites [randInt];
+		currentScoreMon += fWordsWorth [randInt];
+		fWordsRend[wordsIndex].transform.position = new Vector3 (-18F,9F, 0);
+		fWordsTime[wordsIndex]= Time.time+2;
+		fWordsHForce[wordsIndex]=Random.Range(4f, 14.0f);
+		fWordsVForce[wordsIndex]=Random.Range(0f, 5.0f);
 		//initalize a new word to fall, add it to array.
 	}
 
@@ -200,9 +208,10 @@ public class mainscript: MonoBehaviour {
 				} else {
 				fWordsHForce [start]=fWordsHForce [start]*.7F;
 				fWordsVForce [start] = fWordsVForce [start] - .5F;
-				if ((fWordsVForce [start] * -1F) > fWordsRend [start].transform.position.y) {
-					if (!(fWordsRend [start].transform.position.y == 0))
-						fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],fWordsRend [start].transform.position.y*-1,0);				
+				if (fWordsVForce [start] + fWordsRend [start].transform.position.y<=-4f) {
+					if (!(fWordsRend [start].transform.position.y == -4))
+						/* float downwards =fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],-1f,0);*/				
+						fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],(fWordsRend [start].transform.position.y*-1)-4f,0);
 					else {
 						fWordsVForce [start] = (fWordsVForce [start])*-.6F;
 						fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],fWordsVForce[start],0);
