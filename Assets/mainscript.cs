@@ -11,7 +11,7 @@ public class mainscript : MonoBehaviour
     float timeLimit;
     int currentLvl;
     int subLvl;
-    bool lvlTimer = false;
+	bool lvlTimer = false,falling=false,tickInflated=false,tickTransitioning=false;
     float currentScoreInf;
     float currentScoreMon;
     float scoreGoalInf;
@@ -21,7 +21,8 @@ public class mainscript : MonoBehaviour
     int maxWords = 5;
     int fWordsPointer = 0;
     int activWords = 0;
-    GameObject[] fWords;
+	GameObject[] fWords;
+	GameObject tickerObj;
     float[] fWordsTime;
     float[] fWordsHForce;
     float[] fWordsVForce;
@@ -33,13 +34,18 @@ public class mainscript : MonoBehaviour
     Text[] tickerText;
 	int scndLeftTick=0;
 
+	SpriteRenderer exampleshop;
+
  void Start()
     {
+		exampleshop = GameObject.Find ("exampleshop").GetComponent<SpriteRenderer>();
+
         tickerText = new Text[2];
         //get our text for ui components: level, money, ticker, etc
         monTxt = GameObject.Find("monPop").GetComponent<Text>();
         lvlTxt = GameObject.Find("level").GetComponent<Text>();
         totlMonTxt = GameObject.Find("money").GetComponent<Text>();
+		tickerObj = GameObject.Find ("ticker");
         tickerText[0] = GameObject.Find("ticker1").GetComponent<Text>();
         tickerText[1] = GameObject.Find("ticker2").GetComponent<Text>();
 
@@ -195,7 +201,7 @@ public class mainscript : MonoBehaviour
         totlMonTxt.text = "$" + currentScoreMon; //money display
 
         polAnimate("talk");//make animation set to talk
-        print("clicked. score is " + currentScoreInf + " current money is " + currentScoreMon);
+        //print("clicked. score is " + currentScoreInf + " current money is " + currentScoreMon);
     }
 
     public void advanceBar() //influence (level score) is displayed by a bar
@@ -221,29 +227,82 @@ public class mainscript : MonoBehaviour
     public void click()
     {
         //handles clicking
-        //Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        //Collider2D hitCollider = Physics2D.OverlapPoint(mousePosition);
+        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        Collider2D hitCollider = Physics2D.OverlapPoint(mousePosition);
 
-        int wordIndex; //right now i dont know how words will be chosen, so random
-        wordIndex = Random.Range(0, 11);
 
-        addScore(wordIndex); //adds score
-        //spitWord(wordIndex); //makes words fall from mouth of politician
-		spitCoWord(wordIndex);
 
 		//print ("mouse pos " + mousePosition.x + " y " + mousePosition.y + " ");    
+		//print (hitCollider.transform.name);
+        
+		if (hitCollider.transform.name == "ticker") {
 
-        /*this will be how buttons are clicked
-        if (hitCollider) {
-          //print ("Hit " + hitCollider.transform.name + " x" + hitCollider.transform.position.x + " y " + hitCollider.transform.position.y);    
+			if (tickTransitioning) {
+				if (tickInflated) {
+					tickInflated = false;
+					CancelInvoke ("deflateTicker");
+					InvokeRepeating ("inflateTicker", 0.1f, 0.03f);			
+				} else {
+					tickInflated = true;
+					CancelInvoke ("inflateTicker");
+					InvokeRepeating ("deflateTicker", 0.1f, 0.03f);			
+				}
+			
+			} else if (tickInflated) {
+				tickTransitioning = true;
+				exampleshop.enabled = false;
+				InvokeRepeating ("deflateTicker", 0.1f, 0.03f);	
+			} else {
+				tickTransitioning = true;
+				exampleshop.enabled = false;
+				InvokeRepeating ("inflateTicker", 0.1f, 0.03f);	
+			}
 
-          if (hitCollider.transform.name == "politician") {
-              addScore();
-              spitWord ();
-          }
-        }
-        */
+				//print ("hello");
+
+			//print ("Hit " + hitCollider.transform.name + " x" + hitCollider.transform.position.x + " y " + hitCollider.transform.position.y);    
+
+			// if (hitCollider.transform.name == "politician") {
+			//    addScore();
+			//     spitWord ();
+			// }
+		} else {
+
+			int wordIndex; //right now i dont know how words will be chosen, so random
+			wordIndex = Random.Range(0, 11);
+
+			addScore(wordIndex); //adds score
+			//spitWord(wordIndex); //makes words fall from mouth of politician
+			spitCoWord(wordIndex);
+			
+		}
+        
     }
+
+	public void inflateTicker()
+	{
+		if (tickerObj.transform.localScale.y < 620)
+			tickerObj.transform.localScale += new Vector3 (0, 10, 0);
+		else {
+			CancelInvoke ("inflateTicker");
+			tickInflated = true;
+			tickTransitioning = false;
+			exampleshop.enabled = true;
+		}
+	}
+
+	public void deflateTicker()
+	{
+		if (tickerObj.transform.localScale.y > 80)
+			tickerObj.transform.localScale += new Vector3 (0, -10, 0);
+		else {
+			CancelInvoke ("deflateTicker");
+			tickInflated = false;
+			tickTransitioning = false;
+		}
+	}
+
+
 
     public void spitWord(int wordIndex)
     {
@@ -296,8 +355,10 @@ public class mainscript : MonoBehaviour
 		fWordsVForce[fWordsPointer] = Random.Range(0f, 30.0f);
 		//initalize a new word to fall, add it to array.
 
-
-		InvokeRepeating("wordCoFall", 0.1f, 0.3f);
+		if (!falling) {
+			falling = true;
+			InvokeRepeating ("wordCoFall", 0.1f, 0.03f);
+		}
 		//InvokeRepeating("LaunchProjectile", 2.0f, 0.3f);
 	
 	}
@@ -305,6 +366,7 @@ public class mainscript : MonoBehaviour
 	{
 		if (activWords == 0) {
 			CancelInvoke("wordCoFall");
+			falling = false;
 		}
 
 		//print ("test");
@@ -439,7 +501,7 @@ IEnumerator killMoney()
 {
     yield
     return new WaitForSeconds(1);
-    print("time is " + Time.time + " killmon is " + killMon);
+    //print("time is " + Time.time + " killmon is " + killMon);
     if (killMon <= Time.time)
         monTxt.text = "";
 
