@@ -115,10 +115,10 @@ public class mainscript : MonoBehaviour
                 }
   
 				//this area should be redone into a coroutine, or invokerepeating
-				if (activWords != 0) //if there are falling words, make them fall
-                {
-                    wordFall();
-                }
+				//if (activWords != 0) //if there are falling words, make them fall
+                //{
+                //    wordFall();
+                //}
             }
             else //if time ran out
             {
@@ -228,8 +228,10 @@ public class mainscript : MonoBehaviour
         wordIndex = Random.Range(0, 11);
 
         addScore(wordIndex); //adds score
-        spitWord(wordIndex); //makes words fall from mouth of politician
-        //print ("mouse pos " + mousePosition.x + " y " + mousePosition.y + " ");    
+        //spitWord(wordIndex); //makes words fall from mouth of politician
+		spitCoWord(wordIndex);
+
+		//print ("mouse pos " + mousePosition.x + " y " + mousePosition.y + " ");    
 
         /*this will be how buttons are clicked
         if (hitCollider) {
@@ -266,6 +268,105 @@ public class mainscript : MonoBehaviour
         fWordsVForce[fWordsPointer] = Random.Range(0f, 30.0f);
         //initalize a new word to fall, add it to array.
     }
+
+
+	public void spitCoWord(int wordIndex)
+	{
+		//i only need to really keep track of how many active words i have
+
+
+		//spitwords is complicated
+		//it has a bunch of arrays, and a 'pointer' so it can cycle through the array faster
+
+		fWordsPointer++; //move the pointer up for this new word
+		fWordsPointer = fWordsPointer % maxWords; //make sure pointer doesnt exceed array bounds
+
+		if (activWords != maxWords) //only 'maxwords' amount of words can fall at once
+			activWords++;
+		fWordsRend[fWordsPointer].enabled = true;
+
+
+		fWordsRend[fWordsPointer].sprite = wordSprites[wordIndex];
+		fWordsMoneyPop[fWordsPointer] = fWordsMVal[wordIndex];
+
+
+		fWordsRend[fWordsPointer].transform.position = new Vector3(-200F, 9F, 0);
+		fWordsTime[fWordsPointer] = Time.time + 2;
+		fWordsHForce[fWordsPointer] = Random.Range(50f, 200f);
+		fWordsVForce[fWordsPointer] = Random.Range(0f, 30.0f);
+		//initalize a new word to fall, add it to array.
+
+
+		InvokeRepeating("wordCoFall", 0.1f, 0.3f);
+		//InvokeRepeating("LaunchProjectile", 2.0f, 0.3f);
+	
+	}
+	void wordCoFall()
+	{
+		if (activWords == 0) {
+			CancelInvoke("wordCoFall");
+		}
+
+		//print ("test");
+		int start = fWordsPointer - activWords + 1;
+		int killed = 0;
+		if (start < 0)
+			start = start + maxWords;
+
+		//print("start is " + start);
+
+		for (int i = 0; i < activWords; i++)
+		{
+			//print ("in loop. current word is " + activWords +" index is " + fWordsPointer);
+			if (fWordsTime[start] < Time.time)
+			{
+				//print ("killing index " + start);
+				killCoWord(start);
+				killed++;
+			}
+			else
+			{
+				fWordsHForce[start] = fWordsHForce[start] * .7F;
+				fWordsVForce[start] = fWordsVForce[start] - 2F;
+				if (fWordsVForce[start] + fWordsRend[start].transform.position.y <= -120f) {
+					if (!(fWordsRend[start].transform.position.y == -120))
+						/* float downwards =fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],-1f,0);*/
+						fWordsRend[start].transform.position = fWordsRend[start].transform.position + new Vector3(fWordsHForce[start], (fWordsRend[start].transform.position.y * -1) - 120f, 0);
+					else
+					{
+						fWordsVForce[start] = (fWordsVForce[start]) * -.6F;
+						fWordsRend[start].transform.position = fWordsRend[start].transform.position + new Vector3(fWordsHForce[start], fWordsVForce[start], 0);
+
+					}
+				} else
+					fWordsRend[start].transform.position = fWordsRend[start].transform.position + new Vector3(fWordsHForce[start], fWordsVForce[start], 0);
+
+				//move object
+			}
+
+
+			if (start == maxWords - 1)
+				start = 0;
+			else
+				start++;
+		}
+		activWords = activWords - killed;
+		//makes all sprites in array fall. 
+		//if they are to expire, remove them from array.
+	}
+
+			public void killCoWord(int index)
+			{
+				//Destroy (fWords [index]);
+				//fWords [index] = null;
+				fWordsRend[index].enabled = false;
+				displayMoney(fWordsRend[index].transform.position, fWordsMoneyPop[index]);
+				//fWordsTime[index]=0;
+				//fWordsHForce[index]=0;
+				//fWordsVForce[index]=0;
+			}
+
+
 
     public void wordFall()
     {
