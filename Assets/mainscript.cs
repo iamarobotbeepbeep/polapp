@@ -17,28 +17,30 @@ public class mainscript : MonoBehaviour
     float scoreGoalInf;
     Animator barAnim, polAnim; 
     Sprite[] wordSprites;
-    Text monTxt, lvlTxt, totlMonTxt;
+    Text monTxt, lvlTxt, totlMonTxt/*premTxt,cashTxt*/;
     int maxWords = 5;
     int fWordsPointer = 0;
     int activWords = 0;
 	GameObject[] fWords;
-	GameObject tickerObj;
+	GameObject tickerObj,menu;
     float[] fWordsTime;
     float[] fWordsHForce;
     float[] fWordsVForce;
-    float[] fWordsMVal;
     float[] fWordsMoneyPop;
     SpriteRenderer[] fWordsRend;
     float killMon = 0f;
     string[] tickerStrings;
     Text[] tickerText;
 	int scndLeftTick=0;
+	Word[] premWords;
+	Word[] cashWords;
+	Word[] myWords;
 
-	SpriteRenderer exampleshop;
+	//SpriteRenderer exampleshop;
 
  void Start()
     {
-		exampleshop = GameObject.Find ("exampleshop").GetComponent<SpriteRenderer>();
+		//exampleshop = GameObject.Find ("exampleshop").GetComponent<SpriteRenderer>();
 
         tickerText = new Text[2];
         //get our text for ui components: level, money, ticker, etc
@@ -48,10 +50,14 @@ public class mainscript : MonoBehaviour
 		tickerObj = GameObject.Find ("ticker");
         tickerText[0] = GameObject.Find("ticker1").GetComponent<Text>();
         tickerText[1] = GameObject.Find("ticker2").GetComponent<Text>();
+		//premTxt = GameObject.Find("premium").GetComponent<Text>();
+		//cashTxt = GameObject.Find("cash").GetComponent<Text>();
 
         //get animators for our animated objects
         barAnim = GameObject.Find("bar").GetComponent<Animator>();
         polAnim = GameObject.Find("politician").GetComponent<Animator>();
+		menu=GameObject.Find ("menu");
+		menu.SetActive (false);
 
         //load spritesheets
         wordSprites = Resources.LoadAll<Sprite>("Sprites/wordicons");
@@ -63,13 +69,13 @@ public class mainscript : MonoBehaviour
         fWordsVForce = new float[maxWords];
         fWordsRend = new SpriteRenderer[maxWords];
         fWordsMoneyPop = new float[maxWords]; //money value that shows when words pop
-        fWordsMVal = new float[wordSprites.Length]; //how much a word is worth in money
+        //fWordsMVal = new float[wordSprites.Length]; //how much a word is worth in money
 
 
-        for (int i = 0; i < fWordsMVal.Length; i++)
-        {
-            fWordsMVal[i] = i;//for now just assigning arbitrairy money value to them
-        }
+        //for (int i = 0; i < fWordsMVal.Length; i++)
+        //{
+        //    fWordsMVal[i] = i;//for now just assigning arbitrairy money value to them
+       // }
         ///initialize falling words gameobjects, position them and size them
         for (int i = 0; i < fWords.Length; i++)
         {
@@ -82,11 +88,16 @@ public class mainscript : MonoBehaviour
             fWordsRend[i].transform.localScale = new Vector3(3, 3, 1);
         }
 
+		initWord ();
         currentLvl = 1;
         subLvl = 0;
         currentScoreMon = 0f;
         startLvlTimer();
         print("Game initiated.");
+
+		///
+	
+		///
     }
 
     //update checks if someone clicks, 'click()' method handles what was clicked
@@ -193,11 +204,11 @@ public class mainscript : MonoBehaviour
         //each word has a influence and money value, for now we are assuming all influence is 1, so just ++
 
         //add influence
-        currentScoreInf++;
+		currentScoreInf+=myWords[wordIndex].getIVal();
         advanceBar();
 
         //add unique money value based on word
-        currentScoreMon += fWordsMVal[wordIndex];
+		currentScoreMon += myWords[wordIndex].getMVal();
         totlMonTxt.text = "$" + currentScoreMon; //money display
 
         polAnimate("talk");//make animation set to talk
@@ -234,8 +245,18 @@ public class mainscript : MonoBehaviour
 
 		//print ("mouse pos " + mousePosition.x + " y " + mousePosition.y + " ");    
 		//print (hitCollider.transform.name);
+		if (hitCollider == null) {
+
+			int wordIndex; //right now i dont know how words will be chosen, so random
+			wordIndex = Random.Range(0, myWords.Length);
+
+			addScore(wordIndex); //adds score
+			//spitWord(wordIndex); //makes words fall from mouth of politician
+			spitWord(wordIndex);
+
+		}
         
-		if (hitCollider.transform.name == "ticker") {
+		else if (hitCollider.transform.name == "ticker") {
 
 			if (tickTransitioning) {
 				if (tickInflated) {
@@ -250,15 +271,25 @@ public class mainscript : MonoBehaviour
 			
 			} else if (tickInflated) {
 				tickTransitioning = true;
-				exampleshop.enabled = false;
+
+				//
+				//exampleshop.enabled = false;
+				menu.SetActive (false);
+				//
+
 				InvokeRepeating ("deflateTicker", 0.1f, 0.03f);	
 			} else {
 				tickTransitioning = true;
-				exampleshop.enabled = false;
+
+				//
+				//exampleshop.enabled = false;
+				menu.SetActive (false);
+				//
+
 				InvokeRepeating ("inflateTicker", 0.1f, 0.03f);	
 			}
 
-				//print ("hello");
+			//print ("hello");
 
 			//print ("Hit " + hitCollider.transform.name + " x" + hitCollider.transform.position.x + " y " + hitCollider.transform.position.y);    
 
@@ -266,16 +297,13 @@ public class mainscript : MonoBehaviour
 			//    addScore();
 			//     spitWord ();
 			// }
-		} else {
-
-			int wordIndex; //right now i dont know how words will be chosen, so random
-			wordIndex = Random.Range(0, 11);
-
-			addScore(wordIndex); //adds score
-			//spitWord(wordIndex); //makes words fall from mouth of politician
-			spitCoWord(wordIndex);
-			
+		} else if (hitCollider.transform.name == "premium") {
+			print ("premium");
 		}
+		else if (hitCollider.transform.name == "cash") {
+			print ("cash");
+		}
+
         
     }
 
@@ -287,7 +315,10 @@ public class mainscript : MonoBehaviour
 			CancelInvoke ("inflateTicker");
 			tickInflated = true;
 			tickTransitioning = false;
-			exampleshop.enabled = true;
+			//
+			//exampleshop.enabled = true;
+			menu.SetActive (true);
+			//
 		}
 	}
 
@@ -304,32 +335,7 @@ public class mainscript : MonoBehaviour
 
 
 
-    public void spitWord(int wordIndex)
-    {
-        //spitwords is complicated
-        //it has a bunch of arrays, and a 'pointer' so it can cycle through the array faster
-
-        fWordsPointer++; //move the pointer up for this new word
-        fWordsPointer = fWordsPointer % maxWords; //make sure pointer doesnt exceed array bounds
-
-        if (activWords != maxWords) //only 'maxwords' amount of words can fall at once
-            activWords++;
-        fWordsRend[fWordsPointer].enabled = true;
-        
-
-        fWordsRend[fWordsPointer].sprite = wordSprites[wordIndex];
-        fWordsMoneyPop[fWordsPointer] = fWordsMVal[wordIndex];
-        
-
-        fWordsRend[fWordsPointer].transform.position = new Vector3(-200F, 9F, 0);
-        fWordsTime[fWordsPointer] = Time.time + 2;
-        fWordsHForce[fWordsPointer] = Random.Range(50f, 200f);
-        fWordsVForce[fWordsPointer] = Random.Range(0f, 30.0f);
-        //initalize a new word to fall, add it to array.
-    }
-
-
-	public void spitCoWord(int wordIndex)
+	public void spitWord(int wordIndex)
 	{
 		//i only need to really keep track of how many active words i have
 
@@ -346,7 +352,8 @@ public class mainscript : MonoBehaviour
 
 
 		fWordsRend[fWordsPointer].sprite = wordSprites[wordIndex];
-		fWordsMoneyPop[fWordsPointer] = fWordsMVal[wordIndex];
+		fWordsMoneyPop[fWordsPointer] = myWords[wordIndex].getMVal();
+
 
 
 		fWordsRend[fWordsPointer].transform.position = new Vector3(-200F, 9F, 0);
@@ -357,15 +364,15 @@ public class mainscript : MonoBehaviour
 
 		if (!falling) {
 			falling = true;
-			InvokeRepeating ("wordCoFall", 0.1f, 0.03f);
+			InvokeRepeating ("wordFall", 0.1f, 0.03f);
 		}
 		//InvokeRepeating("LaunchProjectile", 2.0f, 0.3f);
 	
 	}
-	void wordCoFall()
+	void wordFall()
 	{
 		if (activWords == 0) {
-			CancelInvoke("wordCoFall");
+			CancelInvoke("wordFall");
 			falling = false;
 		}
 
@@ -383,7 +390,7 @@ public class mainscript : MonoBehaviour
 			if (fWordsTime[start] < Time.time)
 			{
 				//print ("killing index " + start);
-				killCoWord(start);
+				killWord(start);
 				killed++;
 			}
 			else
@@ -417,7 +424,7 @@ public class mainscript : MonoBehaviour
 		//if they are to expire, remove them from array.
 	}
 
-			public void killCoWord(int index)
+			public void killWord(int index)
 			{
 				//Destroy (fWords [index]);
 				//fWords [index] = null;
@@ -430,64 +437,8 @@ public class mainscript : MonoBehaviour
 
 
 
-    public void wordFall()
-    {
-        int start = fWordsPointer - activWords + 1;
-        int killed = 0;
-        if (start < 0)
-            start = start + maxWords;
+    
 
-        //print("start is " + start);
-
-        for (int i = 0; i < activWords; i++)
-        {
-            //print ("in loop. current word is " + activWords +" index is " + fWordsPointer);
-            if (fWordsTime[start] < Time.time)
-            {
-                //print ("killing index " + start);
-                killWord(start);
-                killed++;
-            }
-            else
-            {
-                fWordsHForce[start] = fWordsHForce[start] * .7F;
-                fWordsVForce[start] = fWordsVForce[start] - 2F;
-                if (fWordsVForce[start] + fWordsRend[start].transform.position.y <= -120f) {
-            if (!(fWordsRend[start].transform.position.y == -120))
-                /* float downwards =fWordsRend [start].transform.position = fWordsRend [start].transform.position + new Vector3 (fWordsHForce [start],-1f,0);*/
-                fWordsRend[start].transform.position = fWordsRend[start].transform.position + new Vector3(fWordsHForce[start], (fWordsRend[start].transform.position.y * -1) - 120f, 0);
-            else
-            {
-                fWordsVForce[start] = (fWordsVForce[start]) * -.6F;
-                fWordsRend[start].transform.position = fWordsRend[start].transform.position + new Vector3(fWordsHForce[start], fWordsVForce[start], 0);
-
-            }
-        } else
-     fWordsRend[start].transform.position = fWordsRend[start].transform.position + new Vector3(fWordsHForce[start], fWordsVForce[start], 0);
-
-        //move object
-    }
-
-
-   if (start == maxWords - 1)
-    start = 0;
-   else
-    start++;
-  }
-activWords = activWords - killed;
-  //makes all sprites in array fall. 
-  //if they are to expire, remove them from array.
- }
- public void killWord(int index)
-{
-    //Destroy (fWords [index]);
-    //fWords [index] = null;
-    fWordsRend[index].enabled = false;
-    displayMoney(fWordsRend[index].transform.position, fWordsMoneyPop[index]);
-    //fWordsTime[index]=0;
-    //fWordsHForce[index]=0;
-    //fWordsVForce[index]=0;
-}
 
 public void displayMoney(Vector3 pos, float scoreindex)
 {
@@ -507,5 +458,69 @@ IEnumerator killMoney()
 
 }
 
+	public void initWord ()
+	{
+		//int premCount = 3, cashCount = 3;
+		//premWords = new Word[premCount];
+		//cashWords = new Word[cashCount];
+		float premCost=5;
+		float cashCost = 5;
+		float basicCost = 1;
+		float defMVal = 1;
+		float defIVal = 1;
+		premWords = new Word[3]{new Word("terror",wordSprites[5],premCost,0f,defMVal,defIVal),new Word("usa",wordSprites[6],premCost,0f,defMVal,defIVal),new Word("cash3",wordSprites[7],premCost,0f,defMVal,defIVal)};
+		cashWords = new Word[8]{new Word("ok",wordSprites[0],basicCost,1,defMVal,defIVal),new Word("no",wordSprites[1],basicCost,1,defMVal,defIVal),new Word("well",wordSprites[2],basicCost,1,defMVal,defIVal),new Word("pssh",wordSprites[3],basicCost,1,defMVal,defIVal),new Word("yes",wordSprites[4],basicCost,1,defMVal,defIVal),new Word("cash1",wordSprites[8],cashCost,0,defMVal,defIVal),new Word("terrific",wordSprites[9],cashCost,0,defMVal,defIVal),new Word("global",wordSprites[10],cashCost,0,defMVal,defIVal)};
+		//myWords  = new Word[3]{new Word("ok",wordSprites[0],basicCost,1),new Word("no",wordSprites[1],basicCost,1),new Word("well",wordSprites[2],basicCost,1),new Word("pssh",wordSprites[3],basicCost,1),new Word("yes",wordSprites[4],basicCost,1)};
+		myWords  = new Word[5] {cashWords[0],cashWords[1],cashWords[2],cashWords[3],cashWords[4]};
+	}
 
+
+}
+
+public class Word
+{
+	string wordName;
+	Sprite sprite;
+	float cost;
+	float lvl;
+	float mVal;
+	float iVal;
+
+	public Word(string iWordName, Sprite iSprite, float iCost, float iLvl, float iMVal, float iIVal)
+	{
+		wordName = iWordName;
+		sprite = iSprite;
+		cost = iCost;
+		lvl = iLvl;
+		mVal = iMVal;
+		iVal = iIVal; 
+		
+	}
+
+	public float getMVal()
+	{
+		return mVal;
+	}
+
+	public float getIVal()
+	{
+		return mVal;
+	}
+
+	public Sprite getSprite()
+	{
+		return sprite;
+	}
+	public string getWordName()
+	{
+		return wordName;
+	}
+	public float getlvl()
+	{
+		return lvl;
+	}
+	public float getCost()
+	{
+		return cost;
+	}
 }
