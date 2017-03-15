@@ -11,9 +11,10 @@ public class mainscript : MonoBehaviour
     float timeLimit;
     int currentLvl;
     int subLvl;
-	bool lvlTimer = false,falling=false,tickInflated=false,tickTransitioning=false;
+	bool lvlTimer = false,falling=false,tickInflated=false,tickTransitioning=false,inCShop=false,inPShop=false;
     float currentScoreInf;
     float currentScoreMon;
+	float currentScorePrem;
     float scoreGoalInf;
     Animator barAnim, polAnim; 
     Sprite[] wordSprites;
@@ -92,6 +93,7 @@ public class mainscript : MonoBehaviour
         currentLvl = 1;
         subLvl = 0;
         currentScoreMon = 0f;
+		currentScorePrem = 500f;
         startLvlTimer();
         print("Game initiated.");
 
@@ -248,28 +250,26 @@ public class mainscript : MonoBehaviour
 		if (hitCollider == null) {
 
 			int wordIndex; //right now i dont know how words will be chosen, so random
-			wordIndex = Random.Range(0, myWords.Length);
+			wordIndex = Random.Range (0, myWords.Length);
 
-			addScore(wordIndex); //adds score
+			addScore (wordIndex); //adds score
 			//spitWord(wordIndex); //makes words fall from mouth of politician
-			spitWord(wordIndex);
+			spitWord (wordIndex);
 
-		}
-        
-		else if (hitCollider.transform.name == "ticker") {
+		} else if (hitCollider.transform.name == "ticker") {
 
 			if (tickTransitioning) {
-				if (tickInflated) {
+				if (tickInflated) {//tick is shrinking right now
 					tickInflated = false;
 					CancelInvoke ("deflateTicker");
 					InvokeRepeating ("inflateTicker", 0.1f, 0.03f);			
-				} else {
+				} else {//tick is growing right now
 					tickInflated = true;
 					CancelInvoke ("inflateTicker");
 					InvokeRepeating ("deflateTicker", 0.1f, 0.03f);			
 				}
 			
-			} else if (tickInflated) {
+			} else if (tickInflated) {//set tick to shrink
 				tickTransitioning = true;
 
 				//
@@ -277,8 +277,14 @@ public class mainscript : MonoBehaviour
 				menu.SetActive (false);
 				//
 
+				int childcount = GameObject.Find("editCanvas").transform.childCount;
+				for (int i=0; i < childcount; i++) {
+					Destroy (GameObject.Find ("editCanvas").transform.GetChild (i).gameObject);
+				}
+
+
 				InvokeRepeating ("deflateTicker", 0.1f, 0.03f);	
-			} else {
+			} else {//set tick to grow
 				tickTransitioning = true;
 
 				//
@@ -299,13 +305,113 @@ public class mainscript : MonoBehaviour
 			// }
 		} else if (hitCollider.transform.name == "premium") {
 			print ("premium");
-		}
-		else if (hitCollider.transform.name == "cash") {
+			inPShop = true;
+			//GameObject.Find ("menu").AddComponent (new Text());
+			//GameObject.Find ("editCanvas")
+			//.AddComponent(new GameObject("stext1"));
+			GameObject testG = new GameObject ();
+			//	Text test = new Text ();
+
+			menu.SetActive (false);
+
+			//Text tempTextBox = Instantiate(GameObject.Find("premium").GetComponent<Text>(), GameObject.Find("premium").transform.localPosition, GameObject.Find("premium").transform.rotation) as Text;
+			//tempTextBox.text = "BLABLABLABLABLABLABLABLABL";
+			//tempTextBox.transform.SetParent(GameObject.Find ("editCanvas").transform, false);
+
+			Text prefabName = GameObject.Find ("prefabName").GetComponent<Text> ();
+			Text prefabCost = GameObject.Find ("prefabCost").GetComponent<Text> (); 
+			SpriteRenderer prefabIcon = GameObject.Find ("prefabIcon").GetComponent<SpriteRenderer> ();
+			SpriteRenderer prefabLvl = GameObject.Find ("prefabLvl").GetComponent<SpriteRenderer> ();
+
+
+			SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition, prefabIcon.transform.rotation) as SpriteRenderer;
+			tempIcon.enabled = true;
+			tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+		
+			Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition, prefabName.transform.rotation) as Text;
+			tempTextName.text = "Terror";
+			tempTextName.enabled = true;
+			tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition, prefabLvl.transform.rotation) as SpriteRenderer;
+			tempLvl.enabled = true;
+			tempLvl.transform.name = "lvl0";
+			tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [0].getlvl() / 5f);
+
+			tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition, prefabCost.transform.rotation) as Text;
+			tempTextCost.text = "upgrade $1";
+			tempTextCost.enabled = true;
+			tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+			//Text tempTextBox = Instantiate(GameObject.Find("premium").GetComponent<Text>(), GameObject.Find("premium").transform.localPosition, GameObject.Find("premium").transform.rotation) as Text;
+			//tempTextBox.text = "BLABLABLABLABLABLABLABLABL";
+			//tempTextBox.transform.SetParent(GameObject.Find ("editCanvas").transform, false);
+
+			//Text tempTextBox = Instantiate(GameObject.Find("premium").GetComponent<Text>(), GameObject.Find("premium").transform.localPosition, GameObject.Find("premium").transform.rotation) as Text;
+			//tempTextBox.text = "BLABLABLABLABLABLABLABLABL";
+			//tempTextBox.transform.SetParent(GameObject.Find ("editCanvas").transform, false);
+
+
+
+			//testG.AddComponent (new Text ());
+		} else if (hitCollider.transform.name == "cash") {
 			print ("cash");
+		} 
+
+		else if (inPShop) {
+			if (hitCollider.transform.name.Contains("lvl"))
+			{
+				string wrdindex = hitCollider.transform.name.Substring (3);
+				int intindex = int.Parse (wrdindex);
+				purchaseLvl (premWords[intindex]);
+				hitCollider.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
+				//barAnim.Play("barfill", -1, barPos);
+			}
 		}
+
 
         
     }
+
+
+	public void purchaseLvl(Word purchaseWord)
+	{
+
+		print ("in purchase level method. word being purchased is " + purchaseWord.getWordName ());
+
+
+		float cost = purchaseWord.getCost () * purchaseWord.getlvl ();
+		if (purchaseWord.getlvl () == 0f) {
+			cost = purchaseWord.getCost ();
+			if (currentScorePrem > cost) {
+				purchaseWord.initLvl ();
+				Word[] temparray = new Word [myWords.Length + 1];
+				for (int i = 0; i < myWords.Length; i++) {
+					temparray [i] = myWords [i];
+				}
+				temparray [myWords.Length] = purchaseWord;
+				myWords = temparray;
+
+			}
+
+		} else if (purchaseWord.getlvl () >= 4f) {
+			print ("max level");
+			return;
+		}
+
+		else if (currentScorePrem > cost) {
+			currentScorePrem -= cost;
+			purchaseWord.raiseLvl ();
+			print ("raised level");
+		}
+			
+	}
 
 	public void inflateTicker()
 	{
@@ -504,7 +610,7 @@ public class Word
 
 	public float getIVal()
 	{
-		return mVal;
+		return iVal;
 	}
 
 	public Sprite getSprite()
@@ -522,5 +628,16 @@ public class Word
 	public float getCost()
 	{
 		return cost;
+	}
+
+	public void initLvl()
+	{
+		lvl++;
+	}
+	public void raiseLvl()
+	{
+		lvl++;
+		mVal ++;
+		iVal ++;
 	}
 }
