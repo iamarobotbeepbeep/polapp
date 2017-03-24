@@ -11,23 +11,24 @@ public class mainscript : MonoBehaviour
     float timeLimit;
     int currentLvl;
     int subLvl;
-	bool lvlTimer = false,falling=false,tickInflated=false,tickTransitioning=false,inCShop=false,inPShop=false;
+	bool lvlTimer = false,isScrolling=false,falling=false,mouseHeld=false,tickInflated=false,tickTransitioning=false,inCShop=false,inPShop=false;
     float currentScoreInf;
     float currentScoreMon;
 	float currentScorePrem;
     float scoreGoalInf;
     Animator barAnim, polAnim; 
-    Sprite[] wordSprites;
+	Sprite[] wordSprites,bgSprites;
     Text monTxt, lvlTxt, totlMonTxt/*premTxt,cashTxt*/;
     int maxWords = 5;
     int fWordsPointer = 0;
     int activWords = 0;
 	GameObject[] fWords;
-	GameObject tickerObj,menu;
+	GameObject tickerObj,menu,eCanvasBox;
     float[] fWordsTime;
     float[] fWordsHForce;
     float[] fWordsVForce;
     float[] fWordsMoneyPop;
+	float scrollAmount;
     SpriteRenderer[] fWordsRend;
     float killMon = 0f;
     string[] tickerStrings;
@@ -36,7 +37,9 @@ public class mainscript : MonoBehaviour
 	Word[] premWords;
 	Word[] cashWords;
 	Word[] myWords;
-
+	SpriteRenderer bgRenderer;
+	Collider2D heldObj=null;
+	Vector3 mouseOrig;
 	//SpriteRenderer exampleshop;
 
  void Start()
@@ -49,8 +52,10 @@ public class mainscript : MonoBehaviour
         lvlTxt = GameObject.Find("level").GetComponent<Text>();
         totlMonTxt = GameObject.Find("money").GetComponent<Text>();
 		tickerObj = GameObject.Find ("ticker");
+		eCanvasBox=GameObject.Find("editCanvas");
         tickerText[0] = GameObject.Find("ticker1").GetComponent<Text>();
         tickerText[1] = GameObject.Find("ticker2").GetComponent<Text>();
+
 		//premTxt = GameObject.Find("premium").GetComponent<Text>();
 		//cashTxt = GameObject.Find("cash").GetComponent<Text>();
 
@@ -60,8 +65,10 @@ public class mainscript : MonoBehaviour
 		menu=GameObject.Find ("menu");
 		menu.SetActive (false);
 
+		bgRenderer = GameObject.Find("bg").GetComponent<SpriteRenderer>();
         //load spritesheets
         wordSprites = Resources.LoadAll<Sprite>("Sprites/wordicons");
+		bgSprites = Resources.LoadAll<Sprite>("Sprites/BGS");
 
         //all variables related to falling words
         fWords = new GameObject[maxWords];
@@ -104,9 +111,34 @@ public class mainscript : MonoBehaviour
 
     //update checks if someone clicks, 'click()' method handles what was clicked
     public void Update()
-    {
-        if (Input.GetMouseButtonDown(0))
-            click();
+	{
+		if (Input.GetMouseButtonDown (0) && !tickInflated)
+		{		click ();
+		//print ("click");
+	}
+		else if (Input.GetMouseButtonDown (0) && mouseHeld == false) {
+			//print ("hold");
+			mouseHeld = true;
+			mouseOrig = Camera.main.ScreenToWorldPoint (Input.mousePosition);
+			heldObj = Physics2D.OverlapPoint (Camera.main.ScreenToWorldPoint (Input.mousePosition));
+		} else if (Input.GetMouseButtonUp(0)==false && heldObj!=null) {
+			//print ("scroll");
+			scrollAmount=Camera.main.ScreenToWorldPoint (Input.mousePosition).y-mouseOrig.y;
+			if (scrollAmount > 5f)
+				scrollAmount = 5f;
+			else if (scrollAmount < -5f)
+				scrollAmount = -5f;
+				eCanvasBox.transform.localPosition+= new Vector3(0,scrollAmount,0);
+		
+		}
+		else if (Input.GetMouseButtonUp(0)&&mouseHeld==true){
+			//print ("release");
+			mouseHeld=false;
+
+				clickShop (Physics2D.OverlapPoint (Camera.main.ScreenToWorldPoint (Input.mousePosition)));
+				heldObj = null;
+			
+		}
     }
   
     public void FixedUpdate()
@@ -121,6 +153,7 @@ public class mainscript : MonoBehaviour
                     if (subLvl == 5)
                     {
                         currentLvl++;
+						bgRenderer.sprite = bgSprites [currentLvl];
                         subLvl = 0;
                         lvlTxt.text = currentLvl + "." + subLvl;
                     }
@@ -237,6 +270,61 @@ public class mainscript : MonoBehaviour
         }
     }
 
+	public void clickShop(Collider2D releasedObj)
+	{
+		if (heldObj == null || releasedObj == null) {
+			if (heldObj == null && releasedObj == null) {
+				if (tickTransitioning == false&&tickInflated==true) {
+					inflateDeflate ();
+				
+					//reset scrolling
+					eCanvasBox.transform.position = GameObject.Find ("prefabs").transform.position;
+				}
+				} else
+				return;
+		}
+		else if (heldObj != releasedObj) {
+			return;
+		} else {
+			if (releasedObj.transform.name == "premium") {
+
+				populateShop("p");
+
+			} else if (releasedObj.transform.name == "cash") {
+				populateShop("c");
+			} 
+
+			else if (inPShop) {
+				if (releasedObj.transform.name.Contains("lvl"))
+				{
+					string wrdindex = releasedObj.transform.name.Substring (3);
+					int intindex = int.Parse (wrdindex);
+					purchaseLvl (premWords[intindex],"p");
+					releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
+					//barAnim.Play("barfill", -1, barPos);
+				}
+			}
+			else if (inCShop) {
+				if (releasedObj.transform.name.Contains("lvl"))
+				{
+					string wrdindex = releasedObj.transform.name.Substring (3);
+					int intindex = int.Parse (wrdindex);
+
+					//print ("you are buying " + cashWords [intindex].getWordName ());
+
+					purchaseLvl (cashWords[intindex],"c");
+					releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [intindex].getlvl() / 5f);
+					//barAnim.Play("barfill", -1, barPos);
+				}
+			}
+
+		
+		
+		
+		}
+	}
+
+
     public void click()
     {
         //handles clicking
@@ -257,147 +345,54 @@ public class mainscript : MonoBehaviour
 			spitWord (wordIndex);
 
 		} else if (hitCollider.transform.name == "ticker") {
-
-			if (tickTransitioning) {
-				if (tickInflated) {//tick is shrinking right now, make it stop shrinking and expand
-					tickInflated = false;
-					CancelInvoke ("deflateTicker");
-					InvokeRepeating ("inflateTicker", 0.1f, 0.03f);			
-				} else {//tick is growing right now, make it stop growing and shrink
-					tickInflated = true;
-					CancelInvoke ("inflateTicker");
-					InvokeRepeating ("deflateTicker", 0.1f, 0.03f);			
-				}
-			
-			} else if (tickInflated) {//tick is big, set tick to shrink
-				tickTransitioning = true;
-				inPShop = false;
-				inCShop = false;
-				//
-				//exampleshop.enabled = false;
-				menu.SetActive (false);
-				//
-
-				int childcount = GameObject.Find("editCanvas").transform.childCount;
-				for (int i=0; i < childcount; i++) {
-					Destroy (GameObject.Find ("editCanvas").transform.GetChild (i).gameObject);
-				}
-
-
-				InvokeRepeating ("deflateTicker", 0.1f, 0.03f);	
-			} else {//tick is small, set tick to grow
-				tickTransitioning = true;
-
-				//
-				//exampleshop.enabled = false;
-				menu.SetActive (false);
-				//
-
-				InvokeRepeating ("inflateTicker", 0.1f, 0.03f);	
-			}
-
-			//print ("hello");
-
-			//print ("Hit " + hitCollider.transform.name + " x" + hitCollider.transform.position.x + " y " + hitCollider.transform.position.y);    
-
-			// if (hitCollider.transform.name == "politician") {
-			//    addScore();
-			//     spitWord ();
-			// }
-		} else if (hitCollider.transform.name == "premium") {
-
-			populateShop("p");
-			/*
-
-			print ("premium");
-			inPShop = true;
-			//GameObject.Find ("menu").AddComponent (new Text());
-			//GameObject.Find ("editCanvas")
-			//.AddComponent(new GameObject("stext1"));
-			GameObject testG = new GameObject ();
-			//	Text test = new Text ();
-
-			menu.SetActive (false);
-
-			//Text tempTextBox = Instantiate(GameObject.Find("premium").GetComponent<Text>(), GameObject.Find("premium").transform.localPosition, GameObject.Find("premium").transform.rotation) as Text;
-			//tempTextBox.text = "BLABLABLABLABLABLABLABLABL";
-			//tempTextBox.transform.SetParent(GameObject.Find ("editCanvas").transform, false);
-
-			Text prefabName = GameObject.Find ("prefabName").GetComponent<Text> ();
-			Text prefabCost = GameObject.Find ("prefabCost").GetComponent<Text> (); 
-			SpriteRenderer prefabIcon = GameObject.Find ("prefabIcon").GetComponent<SpriteRenderer> ();
-			SpriteRenderer prefabLvl = GameObject.Find ("prefabLvl").GetComponent<SpriteRenderer> ();
-
-
-			SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition, prefabIcon.transform.rotation) as SpriteRenderer;
-			tempIcon.enabled = true;
-			tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-		
-			Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition, prefabName.transform.rotation) as Text;
-			tempTextName.text = "Terror";
-			tempTextName.enabled = true;
-			tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-			SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition, prefabLvl.transform.rotation) as SpriteRenderer;
-			tempLvl.enabled = true;
-			tempLvl.transform.name = "lvl0";
-			tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [0].getlvl() / 5f);
-
-			tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-			Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition, prefabCost.transform.rotation) as Text;
-			tempTextCost.text = "upgrade $1";
-			tempTextCost.enabled = true;
-			tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-			//Text tempTextBox = Instantiate(GameObject.Find("premium").GetComponent<Text>(), GameObject.Find("premium").transform.localPosition, GameObject.Find("premium").transform.rotation) as Text;
-			//tempTextBox.text = "BLABLABLABLABLABLABLABLABL";
-			//tempTextBox.transform.SetParent(GameObject.Find ("editCanvas").transform, false);
-
-			//Text tempTextBox = Instantiate(GameObject.Find("premium").GetComponent<Text>(), GameObject.Find("premium").transform.localPosition, GameObject.Find("premium").transform.rotation) as Text;
-			//tempTextBox.text = "BLABLABLABLABLABLABLABLABL";
-			//tempTextBox.transform.SetParent(GameObject.Find ("editCanvas").transform, false);
-
-
-
-			//testG.AddComponent (new Text ());
-
-
-			*/
-		} else if (hitCollider.transform.name == "cash") {
-			populateShop("c");
-		} 
-
-		else if (inPShop) {
-			if (hitCollider.transform.name.Contains("lvl"))
-			{
-				string wrdindex = hitCollider.transform.name.Substring (3);
-				int intindex = int.Parse (wrdindex);
-				purchaseLvl (premWords[intindex],"p");
-				hitCollider.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
-				//barAnim.Play("barfill", -1, barPos);
-			}
+			inflateDeflate ();
 		}
-		else if (inCShop) {
-			if (hitCollider.transform.name.Contains("lvl"))
-			{
-				string wrdindex = hitCollider.transform.name.Substring (3);
-				int intindex = int.Parse (wrdindex);
-				purchaseLvl (cashWords[intindex],"c");
-				hitCollider.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [intindex].getlvl() / 5f);
-				//barAnim.Play("barfill", -1, barPos);
-			}
-		}
-
-
-        
+        //end method
     }
 
+	public void inflateDeflate()
+	{
 
+		if (tickTransitioning) {
+			if (tickInflated) {//tick is shrinking right now, make it stop shrinking and expand
+				tickInflated = false;
+				CancelInvoke ("deflateTicker");
+				InvokeRepeating ("inflateTicker", 0.1f, 0.03f);			
+			} else {//tick is growing right now, make it stop growing and shrink
+				tickInflated = true;
+				CancelInvoke ("inflateTicker");
+				InvokeRepeating ("deflateTicker", 0.1f, 0.03f);			
+			}
+
+		} else if (tickInflated) {//tick is big, set tick to shrink
+			tickTransitioning = true;
+			inPShop = false;
+			inCShop = false;
+			//
+			//exampleshop.enabled = false;
+			menu.SetActive (false);
+			//
+
+			int childcount = GameObject.Find ("editCanvas").transform.childCount;
+			for (int i = 0; i < childcount; i++) {
+				Destroy (GameObject.Find ("editCanvas").transform.GetChild (i).gameObject);
+			}
+
+
+			InvokeRepeating ("deflateTicker", 0.1f, 0.03f);	
+		} else {//tick is small, set tick to grow
+			tickTransitioning = true;
+
+			//
+			//exampleshop.enabled = false;
+			menu.SetActive (false);
+			//
+
+			InvokeRepeating ("inflateTicker", 0.1f, 0.03f);	
+		}
+	
+	//end method
+	}
 
 	public void populateShop(string type)
 	{
@@ -540,6 +535,9 @@ public class mainscript : MonoBehaviour
 					temparray [myWords.Length] = purchaseWord;
 					myWords = temparray;
 					currentScoreMon -= cost;
+
+					//print ("bought word " + purchaseWord.getWordName ());
+
 					print ("bought level, cash is now " + currentScoreMon);
 
 				}else {
@@ -608,7 +606,7 @@ public class mainscript : MonoBehaviour
 		fWordsRend[fWordsPointer].enabled = true;
 
 
-		fWordsRend[fWordsPointer].sprite = wordSprites[wordIndex];
+		fWordsRend[fWordsPointer].sprite = myWords[wordIndex].getSprite();
 		fWordsMoneyPop[fWordsPointer] = myWords[wordIndex].getMVal();
 
 
