@@ -95,6 +95,31 @@ public class mainscript : MonoBehaviour
             fWordsRend[i].sprite = wordSprites[0];
             fWordsRend[i].transform.localScale = new Vector3(3, 3, 1);
         }
+		tickerStrings= new string[16];
+		//jokes
+		tickerStrings [0] = "People upset that too many people upset";
+		tickerStrings [1] = "Earth to transition to people being 'just a friend'; new koala love interest";
+		tickerStrings [2] = "Voting centers urge young adults to not take stupid pictures in voting booths";
+		tickerStrings [3] = "Local youth center grows up into middle-aged disenfranchised mini-mall";
+		//status report
+		tickerStrings [4] = "New politician emerges, dwarfed by news of new Arby's opening in Denver";
+		tickerStrings [5] = "New politician makes waves, but not as big of a wave as new tidal wave that hit Arby's in Denver";
+		tickerStrings [6] = "Hot new politician taking on the establishment -- white house officials quote \"he's so hot right now\"";
+		tickerStrings [7] = "Tyrannical new politican/overlord feared yet respected by cowering community";
+		//hints
+		tickerStrings [8] = "Trade cash to upgrade words, work smarter not harder. Or really, probably do both, like a decent respected professional";
+		tickerStrings [9] = "Sometimes the news can hint to which words will be more effective";
+		tickerStrings [10] = "Tap faster to win faster";
+		tickerStrings [11] = "Make sure to take frequent bathroom breaks. Its a phone game after all";
+		//events
+		tickerStrings [12] = "Global warming all the rage. Literally, as wild badgers madly flee dying forests";
+		tickerStrings [13] = "Money -- people wish they had more of it while working same amount.";
+		tickerStrings [14] = "Citizens bored of hearing the word 'no', they want a politician who can say \"Yes!\" or at least \"si\"";
+		tickerStrings [15] = "You have been caught cheating on your spouse with iguana, showing your true colors!";
+
+
+
+
 
 		initWord ();
         currentLvl = 1;
@@ -181,14 +206,14 @@ public class mainscript : MonoBehaviour
             }
         }
 		//two tickers, if second tickers x is at ticker start
-		if (tickerText [scndLeftTick].transform.position.x <= 31F) {
+		if (tickerText [scndLeftTick].rectTransform.position.x <= -10F) {
 			//make first ticker become trailling ticker
 			initTickText();
 
 		} else {
 		//otherwise just push them both left
-			tickerText[0].transform.position+= new Vector3(-1,0,0);
-			tickerText[1].transform.position+= new Vector3(-1,0,0);
+			tickerText[0].transform.position+= new Vector3(-2,0,0);
+			tickerText[1].transform.position+= new Vector3(-2,0,0);
 
 		}
 
@@ -200,16 +225,40 @@ public class mainscript : MonoBehaviour
 		int tickIndex = scndLeftTick - 1;
 		if (tickIndex == -1)
 			tickIndex = tickerText.Length - 1;
+		
+		int randomint = Random.Range(0,tickerStrings.Length);
+
+		//set width to fit text. i think 100 width is like 5 letters
+		tickerText [tickIndex].rectTransform.sizeDelta = new Vector2 (tickerStrings [randomint].Length*21, 46);
+	
 		//calculate its new x. trailling x + length.
-		float startx = tickerText[scndLeftTick].transform.position.x;
-		float length = tickerText [scndLeftTick].GetComponentInParent<RectTransform> ().rect.width;
+		float startx = tickerText[scndLeftTick].rectTransform.position.x;
+		float length = tickerText [scndLeftTick].rectTransform.sizeDelta.x;
+
+
+		print ("start x is " + startx + " length is " + length + ", startx plus length is" + (startx + length));
+		print("test " + (startx-length/2));
+
+		float endpoint = startx + length / 2;
+		float startpointtwo = endpoint + tickerText [tickIndex].rectTransform.sizeDelta.x / 2;
+
+		tickerText [tickIndex].text = tickerStrings [randomint];
+		//float length = tickerText [scndLeftTick].GetComponentInParent<RectTransform> ().rect.width;
 		//set our resetting ticker to that position
-		tickerText [tickIndex].transform.position = new Vector3 (startx+length, tickerText [tickIndex].transform.position.y, 0);
-	    //now signify it as the trailing ticker
+		tickerText [tickIndex].transform.position = new Vector3 (startpointtwo, tickerText [tickIndex].transform.position.y, 0);
+	
+		//load text with new word from array
+
+		//now signify it as the trailing ticker
+
+
 		scndLeftTick++;
 		if (scndLeftTick >= tickerText.Length) {
 			scndLeftTick = 0;
+
 		}
+
+	
 	}
 
     public void startLvlTimer()//starts level timer based on level

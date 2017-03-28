@@ -1,8 +1,9 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\mainscript.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets\Resources\NewSurfaceShader.shader">
     <Files>
-      <File FileName="Assets\mainscript.cs" Line="277" Column="51" />
+      <File FileName="Assets\mainscript.cs" Line="243" Column="57" />
+      <File FileName="Assets\Resources\NewSurfaceShader.shader" Line="30" Column="2" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
