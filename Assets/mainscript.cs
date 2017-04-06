@@ -7,85 +7,96 @@ using UnityEngine.UI;
 public class mainscript : MonoBehaviour
 {
 
-    float startTime;
-    float timeLimit;
-    int currentLvl;
-    int subLvl;
-	bool lvlTimer = false,isScrolling=false,falling=false,mouseHeld=false,tickInflated=false,tickTransitioning=false,inCShop=false,inPShop=false;
-    float currentScoreInf;
-    float currentScoreMon;
-	float currentScorePrem;
-    float scoreGoalInf;
-    Animator barAnim, polAnim; 
+    bool lvlTimer = false,isScrolling=false,falling=false,
+	mouseHeld=false,tickInflated=false,tickTransitioning=false,
+	inCShop=false,inPShop=false;
+
+	int currentLvl,subLvl,maxWords,fWordsPointer,activWords,scndLeftTick;
+
+	float startTime,timeLimit,currentScoreInf,
+	currentScoreMon,currentScorePrem,scoreGoalInf,scrollAmount,killMon;
+	float[] fWordsTime,fWordsHForce,fWordsVForce,fWordsMoneyPop;
+
+	Animator barAnim, polAnim; 
+
 	Sprite[] wordSprites,bgSprites;
-    Text monTxt, lvlTxt, totlMonTxt/*premTxt,cashTxt*/;
-    int maxWords = 5;
-    int fWordsPointer = 0;
-    int activWords = 0;
-	GameObject[] fWords;
+
+    Text monTxt, lvlTxt, totlMonTxt;
+	Text[] tickerText;
+
+    GameObject[] fWords;
 	GameObject tickerObj,menu,eCanvasBox;
-    float[] fWordsTime;
-    float[] fWordsHForce;
-    float[] fWordsVForce;
-    float[] fWordsMoneyPop;
-	float scrollAmount;
+
     SpriteRenderer[] fWordsRend;
-    float killMon = 0f;
-    string[] tickerStrings;
-    Text[] tickerText;
-	int scndLeftTick=0;
-	Word[] premWords;
-	Word[] cashWords;
-	Word[] myWords;
 	SpriteRenderer bgRenderer;
+
+	string[] tickerStrings;
+    
+	Word[] premWords,cashWords,myWords;
 	Collider2D heldObj=null;
 	Vector3 mouseOrig;
-	//SpriteRenderer exampleshop;
+
 
  void Start()
     {
-		//exampleshop = GameObject.Find ("exampleshop").GetComponent<SpriteRenderer>();
+		//initiate some variables
 
-        tickerText = new Text[2];
-        //get our text for ui components: level, money, ticker, etc
+
+		//ints
+		maxWords = 5;
+		fWordsPointer = 0;
+		activWords = 0;
+		currentLvl = 1;
+		subLvl = 0;
+		scndLeftTick=0;
+
+		//floats
+		killMon = 0f;
+		fWordsTime = new float[maxWords];
+		fWordsHForce = new float[maxWords];
+		fWordsVForce = new float[maxWords];
+		fWordsMoneyPop = new float[maxWords]; 
+		currentScoreMon = 0f;
+		currentScorePrem = 500f;
+
+		//text variables
         monTxt = GameObject.Find("monPop").GetComponent<Text>();
         lvlTxt = GameObject.Find("level").GetComponent<Text>();
         totlMonTxt = GameObject.Find("money").GetComponent<Text>();
-		tickerObj = GameObject.Find ("ticker");
-		eCanvasBox=GameObject.Find("editCanvas");
-        tickerText[0] = GameObject.Find("ticker1").GetComponent<Text>();
+		tickerText = new Text[2];
+		tickerText[0] = GameObject.Find("ticker1").GetComponent<Text>();
         tickerText[1] = GameObject.Find("ticker2").GetComponent<Text>();
 
-		//premTxt = GameObject.Find("premium").GetComponent<Text>();
-		//cashTxt = GameObject.Find("cash").GetComponent<Text>();
+		//game objects
+		tickerObj = GameObject.Find ("ticker");
+		eCanvasBox=GameObject.Find("editCanvas");
+		menu=GameObject.Find ("menu");
+		fWords = new GameObject[maxWords];
 
-        //get animators for our animated objects
+
+        //animators
         barAnim = GameObject.Find("bar").GetComponent<Animator>();
         polAnim = GameObject.Find("politician").GetComponent<Animator>();
-		menu=GameObject.Find ("menu");
-		menu.SetActive (false);
 
-		bgRenderer = GameObject.Find("bg").GetComponent<SpriteRenderer>();
-        //load spritesheets
-        wordSprites = Resources.LoadAll<Sprite>("Sprites/wordicons");
+		//spritesheets
+		wordSprites = Resources.LoadAll<Sprite>("Sprites/wordicons");
 		bgSprites = Resources.LoadAll<Sprite>("Sprites/BGS");
 
-        //all variables related to falling words
-        fWords = new GameObject[maxWords];
-        fWordsTime = new float[maxWords];
-        fWordsHForce = new float[maxWords];
-        fWordsVForce = new float[maxWords];
-        fWordsRend = new SpriteRenderer[maxWords];
-        fWordsMoneyPop = new float[maxWords]; //money value that shows when words pop
-        //fWordsMVal = new float[wordSprites.Length]; //how much a word is worth in money
+		//spriterenderers
+		bgRenderer = GameObject.Find("bg").GetComponent<SpriteRenderer>();
+		fWordsRend = new SpriteRenderer[maxWords];
+
+		//strings
+		tickerStrings= new string[16];
+		initTick ();
 
 
-        //for (int i = 0; i < fWordsMVal.Length; i++)
-        //{
-        //    fWordsMVal[i] = i;//for now just assigning arbitrairy money value to them
-       // }
-        ///initialize falling words gameobjects, position them and size them
-        for (int i = 0; i < fWords.Length; i++)
+		//end variable initiations
+        
+		initWord (); //set up word arrays, cash words, prem words, and my words
+
+		//init words, i should redo this with a new system.
+		for (int i = 0; i < fWords.Length; i++)
         {
 
             fWords[i] = new GameObject("word" + i);
@@ -95,59 +106,28 @@ public class mainscript : MonoBehaviour
             fWordsRend[i].sprite = wordSprites[0];
             fWordsRend[i].transform.localScale = new Vector3(3, 3, 1);
         }
-		tickerStrings= new string[16];
-		//jokes
-		tickerStrings [0] = "People upset that too many people upset";
-		tickerStrings [1] = "Earth to transition to people being 'just a friend'; new koala love interest";
-		tickerStrings [2] = "Voting centers urge young adults to not take stupid pictures in voting booths";
-		tickerStrings [3] = "Local youth center grows up into middle-aged disenfranchised mini-mall";
-		//status report
-		tickerStrings [4] = "New politician emerges, dwarfed by news of new Arby's opening in Denver";
-		tickerStrings [5] = "New politician makes waves, but not as big of a wave as new tidal wave that hit Arby's in Denver";
-		tickerStrings [6] = "Hot new politician taking on the establishment -- white house officials quote \"he's so hot right now\"";
-		tickerStrings [7] = "Tyrannical new politican/overlord feared yet respected by cowering community";
-		//hints
-		tickerStrings [8] = "Trade cash to upgrade words, work smarter not harder. Or really, probably do both, like a decent respected professional";
-		tickerStrings [9] = "Sometimes the news can hint to which words will be more effective";
-		tickerStrings [10] = "Tap faster to win faster";
-		tickerStrings [11] = "Make sure to take frequent bathroom breaks. Its a phone game after all";
-		//events
-		tickerStrings [12] = "Global warming all the rage. Literally, as wild badgers madly flee dying forests";
-		tickerStrings [13] = "Money -- people wish they had more of it while working same amount.";
-		tickerStrings [14] = "Citizens bored of hearing the word 'no', they want a politician who can say \"Yes!\" or at least \"si\"";
-		tickerStrings [15] = "You have been caught cheating on your spouse with iguana, showing your true colors!";
+			
 
+		menu.SetActive (false); //should think of a way to not need this
 
-
-
-
-		initWord ();
-        currentLvl = 1;
-        subLvl = 0;
-        currentScoreMon = 0f;
-		currentScorePrem = 500f;
-        startLvlTimer();
+		initLvlTimer();
         print("Game initiated.");
 
-		///
-	
-		///
-    }
+	}//end of start()
 
-    //update checks if someone clicks, 'click()' method handles what was clicked
-    public void Update()
+	public void Update() //update looks for mouse clicks, and handles them.
 	{
-		if (Input.GetMouseButtonDown (0) && !tickInflated)
-		{		click ();
-		//print ("click");
-	}
+		if (Input.GetMouseButtonDown (0) && !tickInflated){
+			//regular click, menu is not open.
+			click ();
+		}
 		else if (Input.GetMouseButtonDown (0) && mouseHeld == false) {
-			//print ("hold");
+			//regular click, menu is open. mouse is in 'held down' state.
 			mouseHeld = true;
 			mouseOrig = Camera.main.ScreenToWorldPoint (Input.mousePosition);
 			heldObj = Physics2D.OverlapPoint (Camera.main.ScreenToWorldPoint (Input.mousePosition));
 		} else if (Input.GetMouseButtonUp(0)==false && heldObj!=null) {
-			//print ("scroll");
+			//mouse is held. use it to scroll menu.
 			scrollAmount=Camera.main.ScreenToWorldPoint (Input.mousePosition).y-mouseOrig.y;
 			if (scrollAmount > 5f)
 				scrollAmount = 5f;
@@ -157,30 +137,29 @@ public class mainscript : MonoBehaviour
 		
 		}
 		else if (Input.GetMouseButtonUp(0)&&mouseHeld==true){
-			//print ("release");
+			//mouse button is released in menu.
 			mouseHeld=false;
-
-				clickShop (Physics2D.OverlapPoint (Camera.main.ScreenToWorldPoint (Input.mousePosition)));
-				heldObj = null;
+			clickShop (Physics2D.OverlapPoint (Camera.main.ScreenToWorldPoint (Input.mousePosition)));
+			heldObj = null;
 			
 		}
-    }
+	} //end update()
   
-    public void FixedUpdate()
+    public void FixedUpdate() //handles level timers and checks win condition.
     {
-        if (lvlTimer)//if level has timer running
+        if (lvlTimer)//if level timer running
         {
-            if (Time.time < timeLimit)//if theres still time left
+            if (Time.time < timeLimit)//if timelimit not expired
             {
                 if (currentScoreInf >= scoreGoalInf)//if user reached score threshold
                 {
                     lvlTimer = false; //turn off timer, advance level and sublevel
-                    if (subLvl == 5)
+                    if (subLvl == 5)//each level has 5 sublevels.
                     {
                         currentLvl++;
-						bgRenderer.sprite = bgSprites [currentLvl];
                         subLvl = 0;
                         lvlTxt.text = currentLvl + "." + subLvl;
+						bgRenderer.sprite = bgSprites [currentLvl];
                     }
                     else
                     {
@@ -188,80 +167,42 @@ public class mainscript : MonoBehaviour
                         lvlTxt.text = currentLvl + "." + subLvl;
                     }
                     print("you win. moving to level " + currentLvl + "." + subLvl);
-                    startLvlTimer();
+                    
+					initLvlTimer();//level automatically starts, should change this.
+					//i dont like how level progression is seperate from the bar.
+					//this should be redone as invoke repeating
+					//the advance bar should return a true/false i think
+					//examples of how to call invoke
+					//InvokeRepeating ("wordFall", 0.1f, 0.03f);
+					//CancelInvoke("wordFall");
+
                 }
   
-				//this area should be redone into a coroutine, or invokerepeating
-				//if (activWords != 0) //if there are falling words, make them fall
-                //{
-                //    wordFall();
-                //}
             }
             else //if time ran out
             {
                 lvlTimer = false;
                 print("you lose, restarting level.");
-                startLvlTimer();
+                initLvlTimer();
                 advanceBar();
             }
         }
-		//two tickers, if second tickers x is at ticker start
+		//scroll tickers and reinstate them
 		if (tickerText [scndLeftTick].rectTransform.position.x <= -10F) {
-			//make first ticker become trailling ticker
-			initTickText();
-
+			//if the trailing (rightmost ticker) has reached leftmost part of screen
+			//reinstate the leftmost ticker, move it to the right and retext it
+			renewTick();
 		} else {
-		//otherwise just push them both left
+		//otherwise scroll
 			tickerText[0].transform.position+= new Vector3(-2,0,0);
 			tickerText[1].transform.position+= new Vector3(-2,0,0);
 
 		}
 
-    }
-
-	public void initTickText()
-	{
-		//get index of ticker we are going to reset
-		int tickIndex = scndLeftTick - 1;
-		if (tickIndex == -1)
-			tickIndex = tickerText.Length - 1;
-		
-		int randomint = Random.Range(0,tickerStrings.Length);
-
-		//set width to fit text. i think 100 width is like 5 letters
-		tickerText [tickIndex].rectTransform.sizeDelta = new Vector2 (tickerStrings [randomint].Length*21, 46);
-	
-		//calculate its new x. trailling x + length.
-		float startx = tickerText[scndLeftTick].rectTransform.position.x;
-		float length = tickerText [scndLeftTick].rectTransform.sizeDelta.x;
+    } //end fixed update
 
 
-		print ("start x is " + startx + " length is " + length + ", startx plus length is" + (startx + length));
-		print("test " + (startx-length/2));
-
-		float endpoint = startx + length / 2;
-		float startpointtwo = endpoint + tickerText [tickIndex].rectTransform.sizeDelta.x / 2;
-
-		tickerText [tickIndex].text = tickerStrings [randomint];
-		//float length = tickerText [scndLeftTick].GetComponentInParent<RectTransform> ().rect.width;
-		//set our resetting ticker to that position
-		tickerText [tickIndex].transform.position = new Vector3 (startpointtwo, tickerText [tickIndex].transform.position.y, 0);
-	
-		//load text with new word from array
-
-		//now signify it as the trailing ticker
-
-
-		scndLeftTick++;
-		if (scndLeftTick >= tickerText.Length) {
-			scndLeftTick = 0;
-
-		}
-
-	
-	}
-
-    public void startLvlTimer()//starts level timer based on level
+	public void initLvlTimer()//starts level timer based on level
     {
         startGameScore(); //restarts score needed to win level
         lvlTimer = true;
@@ -652,8 +593,9 @@ public class mainscript : MonoBehaviour
 
 		if (activWords != maxWords) //only 'maxwords' amount of words can fall at once
 			activWords++;
-		fWordsRend[fWordsPointer].enabled = true;
 
+
+		fWordsRend[fWordsPointer].enabled = true;
 
 		fWordsRend[fWordsPointer].sprite = myWords[wordIndex].getSprite();
 		fWordsMoneyPop[fWordsPointer] = myWords[wordIndex].getMVal();
@@ -762,24 +704,87 @@ IEnumerator killMoney()
 
 }
 
+	/****menu methods***/
+	/**ticker methods***/
+
+	public void initTick() //fill ticker string array
+	{
+		//jokes
+		tickerStrings [0] = "People upset that too many people upset";
+		tickerStrings [1] = "Earth to transition to people being 'just a friend'; new koala love interest";
+		tickerStrings [2] = "Voting centers urge young adults to not take stupid pictures in voting booths";
+		tickerStrings [3] = "Local youth center grows up into middle-aged disenfranchised mini-mall";
+		//status report
+		tickerStrings [4] = "New politician emerges, dwarfed by news of new Arby's opening in Denver";
+		tickerStrings [5] = "New politician makes waves, but not as big of a wave as new tidal wave that hit Arby's in Denver";
+		tickerStrings [6] = "Hot new politician taking on the establishment -- white house officials quote \"he's so hot right now\"";
+		tickerStrings [7] = "Tyrannical new politican/overlord feared yet respected by cowering community";
+		//hints
+		tickerStrings [8] = "Trade cash to upgrade words, work smarter not harder. Or really, probably do both, like a decent respected professional";
+		tickerStrings [9] = "Sometimes the news can hint to which words will be more effective";
+		tickerStrings [10] = "Tap faster to win faster";
+		tickerStrings [11] = "Make sure to take frequent bathroom breaks. Its a phone game after all";
+		//events
+		tickerStrings [12] = "Global warming all the rage. Literally, as wild badgers madly flee dying forests";
+		tickerStrings [13] = "Money -- people wish they had more of it while working same amount.";
+		tickerStrings [14] = "Citizens bored of hearing the word 'no', they want a politician who can say \"Yes!\" or at least \"si\"";
+		tickerStrings [15] = "You have been caught cheating on your spouse with iguana, showing your true colors!";
+
+
+	} //end initiate ticker strings
+
+	public void renewTick()//reposition and reinitiate tickers
+	{
+		//get index of ticker we are going to reset
+		int tickIndex = scndLeftTick - 1;
+		if (tickIndex == -1)
+			tickIndex = tickerText.Length - 1;
+
+		//chose a random into for our new random string to fill ticker
+		int randomint = Random.Range(0,tickerStrings.Length); 
+
+		//set width to fit new text. i think 100 width is like 5 letters
+		tickerText [tickIndex].rectTransform.sizeDelta = new Vector2 (tickerStrings [randomint].Length*21, 46);
+
+		//calculate its new x. trailling tickers x + length.
+		float startx = tickerText[scndLeftTick].rectTransform.position.x;
+		float length = tickerText [scndLeftTick].rectTransform.sizeDelta.x;
+
+		//unforuatnely startx is middle of ticker. so its really x + 1/2length
+		float startPoint = startx + length / 2;
+
+		//which means our new x should be our start x, plus half its new length.
+		float startPointReal = startPoint + tickerText [tickIndex].rectTransform.sizeDelta.x / 2;
+		tickerText [tickIndex].transform.position = new Vector3 (startPointReal, tickerText [tickIndex].transform.position.y, 0);
+
+
+		//now finally place new text inside ticker
+		tickerText [tickIndex].text = tickerStrings [randomint];
+
+		//now set it as the new 'trailing' ticker
+		scndLeftTick++;
+		if (scndLeftTick >= tickerText.Length) {
+			scndLeftTick = 0;
+		}
+			
+	}//end renewTick
+
+
+	/***word methods**/
 	public void initWord ()
 	{
-		//int premCount = 3, cashCount = 3;
-		//premWords = new Word[premCount];
-		//cashWords = new Word[cashCount];
-		float premCost=5;
-		float cashCost = 5;
-		float basicCost = 1;
-		float defMVal = 1;
-		float defIVal = 1;
+		float premCost=5; //default cost to buy prem
+		float cashCost = 5; //default cost to buy cash
+		float basicCost = 1; //default cost to buy basic
+		float defMVal = 1; //default money value
+		float defIVal = 1; //default influence value
 		premWords = new Word[3]{new Word("terror",wordSprites[5],premCost,0f,defMVal,defIVal),new Word("usa",wordSprites[6],premCost,0f,defMVal,defIVal),new Word("cash3",wordSprites[7],premCost,0f,defMVal,defIVal)};
 		cashWords = new Word[8]{new Word("ok",wordSprites[0],basicCost,1,defMVal,defIVal),new Word("no",wordSprites[1],basicCost,1,defMVal,defIVal),new Word("well",wordSprites[2],basicCost,1,defMVal,defIVal),new Word("pssh",wordSprites[3],basicCost,1,defMVal,defIVal),new Word("yes",wordSprites[4],basicCost,1,defMVal,defIVal),new Word("cash1",wordSprites[8],cashCost,0,defMVal,defIVal),new Word("terrific",wordSprites[9],cashCost,0,defMVal,defIVal),new Word("global",wordSprites[10],cashCost,0,defMVal,defIVal)};
-		//myWords  = new Word[3]{new Word("ok",wordSprites[0],basicCost,1),new Word("no",wordSprites[1],basicCost,1),new Word("well",wordSprites[2],basicCost,1),new Word("pssh",wordSprites[3],basicCost,1),new Word("yes",wordSprites[4],basicCost,1)};
 		myWords  = new Word[5] {cashWords[0],cashWords[1],cashWords[2],cashWords[3],cashWords[4]};
 	}
 
 
-}
+} //end of mainscript class
 
 public class Word
 {
