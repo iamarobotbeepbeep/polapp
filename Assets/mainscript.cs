@@ -17,9 +17,7 @@ public class mainscript : MonoBehaviour
 	currentScoreMon,currentScorePrem,scoreGoalInf,scrollAmount,killMon;
 	float[] fWordsTime,fWordsHForce,fWordsVForce,fWordsMoneyPop;
 
-	Animator barAnim, polAnim; 
-
-	Sprite[] wordSprites,bgSprites;
+	Sprite[] wordSprites,bgSprites,lisaSprites;
 
     Text monTxt, lvlTxt, totlMonTxt;
 	Text[] tickerText;
@@ -27,15 +25,14 @@ public class mainscript : MonoBehaviour
     GameObject[] fWords;
 	GameObject tickerObj,menu,eCanvasBox;
 
-    SpriteRenderer[] fWordsRend;
-	SpriteRenderer bgRenderer;
+	SpriteRenderer bgRenderer,politician;
+	SpriteRenderer[] fWordsRend;
 
+	Animator barAnim, polAnim; 
 	string[] tickerStrings;
-    
 	Word[] premWords,cashWords,myWords;
 	Collider2D heldObj=null;
 	Vector3 mouseOrig;
-
 
  void Start()
     {
@@ -43,7 +40,7 @@ public class mainscript : MonoBehaviour
 
 
 		//ints
-		maxWords = 5;
+		maxWords = 50;
 		fWordsPointer = 0;
 		activWords = 0;
 		currentLvl = 1;
@@ -77,14 +74,32 @@ public class mainscript : MonoBehaviour
         //animators
         barAnim = GameObject.Find("bar").GetComponent<Animator>();
         polAnim = GameObject.Find("politician").GetComponent<Animator>();
+		if (charselect.getString () == "lisa") { //check which character was picked
+			polAnim.Play("lisaIdleTran");
+		}
+		else if (charselect.getString () == "grim") { //check which character was picked
+			polAnim.Play("grimIdleTran");
+		}
+		else if (charselect.getString () == "alg") { //check which character was picked
+			polAnim.Play("algIdleTran");
+		}
+
 
 		//spritesheets
 		wordSprites = Resources.LoadAll<Sprite>("Sprites/wordicons");
 		bgSprites = Resources.LoadAll<Sprite>("Sprites/BGS");
+		lisaSprites = Resources.LoadAll<Sprite>("Sprites/lisa");
 
 		//spriterenderers
 		bgRenderer = GameObject.Find("bg").GetComponent<SpriteRenderer>();
 		fWordsRend = new SpriteRenderer[maxWords];
+		politician = GameObject.Find("politician").GetComponent<SpriteRenderer>();
+		print(charselect.getString());
+		if 	(charselect.getString()=="lisa") //check which character was picked
+		{
+			politician.sprite = lisaSprites [0];
+		}
+		
 
 		//strings
 		tickerStrings= new string[16];
@@ -236,7 +251,7 @@ public class mainscript : MonoBehaviour
 		currentScoreMon += myWords[wordIndex].getMVal();
         totlMonTxt.text = "$" + currentScoreMon; //money display
 
-        polAnimate("talk");//make animation set to talk
+        polAnimate("Talk");//make animation set to talk
         //print("clicked. score is " + currentScoreInf + " current money is " + currentScoreMon);
     }
 
@@ -254,14 +269,23 @@ public class mainscript : MonoBehaviour
 
     public void polAnimate(string state) //change an animation to 'state'
     {
-        if (state == "talk")
-        {
-            polAnim.Play("talk");
-        }
+
+		if (charselect.getString () + state=="lisaTalk")
+			polAnim.Play ("lisaTalk");
+		else if (charselect.getString () + state=="grimTalk")
+			polAnim.Play ("grimTalk");
+		else if (charselect.getString () + state=="algTalk")
+			polAnim.Play ("algTalk");
+        //if (state == "talk")
+        //{
+        //    polAnim.Play("talk");
+        //}
     }
 
 	public void clickShop(Collider2D releasedObj)
 	{
+
+
 		if (heldObj == null || releasedObj == null) {
 			if (heldObj == null && releasedObj == null) {
 				if (tickTransitioning == false&&tickInflated==true) {
@@ -413,7 +437,7 @@ public class mainscript : MonoBehaviour
 			tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
-				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,i*yoffset,0), prefabLvl.transform.rotation) as SpriteRenderer;
+				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,i*yoffset,1), prefabLvl.transform.rotation) as SpriteRenderer;
 			tempLvl.enabled = true;
 			tempLvl.transform.name = "lvl"+i;
 			tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [i].getlvl() / 5f);
@@ -444,19 +468,19 @@ public class mainscript : MonoBehaviour
 			{
 				print ("iteration is " + i);
 
-				SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,i*yoffset,0), prefabIcon.transform.rotation) as SpriteRenderer;
+				SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,i*yoffset,-1), prefabIcon.transform.rotation) as SpriteRenderer;
 				tempIcon.enabled = true;
 				tempIcon.sprite = cashWords [i].getSprite();
 				tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
-				Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,i*yoffset,0), prefabName.transform.rotation) as Text;
+				Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,i*yoffset,-1), prefabName.transform.rotation) as Text;
 				tempTextName.text = cashWords[i].getWordName();
 				tempTextName.enabled = true;
 				tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
-				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,i*yoffset,0), prefabLvl.transform.rotation) as SpriteRenderer;
+				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,i*yoffset,1), prefabLvl.transform.rotation) as SpriteRenderer;
 				tempLvl.enabled = true;
 				tempLvl.transform.name = "lvl"+i;
 				tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [i].getlvl() / 5f);
@@ -464,7 +488,7 @@ public class mainscript : MonoBehaviour
 				tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
-				Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,i*yoffset,0), prefabCost.transform.rotation) as Text;
+				Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,i*yoffset,-1), prefabCost.transform.rotation) as Text;
 				tempTextCost.text = "upgrade $" + cashWords[i].getCost();
 				tempTextCost.enabled = true;
 				tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
@@ -593,7 +617,9 @@ public class mainscript : MonoBehaviour
 
 		if (activWords != maxWords) //only 'maxwords' amount of words can fall at once
 			activWords++;
-
+		else if (activWords == maxWords) {
+			killWord (fWordsPointer);	
+		}
 
 		fWordsRend[fWordsPointer].enabled = true;
 
@@ -675,7 +701,7 @@ public class mainscript : MonoBehaviour
 				//Destroy (fWords [index]);
 				//fWords [index] = null;
 				fWordsRend[index].enabled = false;
-				displayMoney(fWordsRend[index].transform.position, fWordsMoneyPop[index]);
+				StartCoroutine(displayMoney(fWordsRend[index].transform.position, fWordsMoneyPop[index]));
 				//fWordsTime[index]=0;
 				//fWordsHForce[index]=0;
 				//fWordsVForce[index]=0;
@@ -686,21 +712,21 @@ public class mainscript : MonoBehaviour
     
 
 
-public void displayMoney(Vector3 pos, float scoreindex)
-{
-    monTxt.text = "+" + scoreindex;
-    monTxt.transform.position = pos + new Vector3(70, 0, 0);
-    killMon = Time.time + .9f;
-    StartCoroutine(killMoney());
-}
 
-IEnumerator killMoney()
-{
+	IEnumerator displayMoney(Vector3 pos, float scoreindex)
+	{
+		Text displayMoney = Instantiate (monTxt, pos + new Vector3 (70, 0, 0), monTxt.transform.rotation) as Text;
+
+		displayMoney.text = "$" + scoreindex;
+		displayMoney.transform.SetParent (GameObject.Find ("gameui").transform, false);
+		//monTxt.text = "+" + scoreindex;
+
     yield
     return new WaitForSeconds(1);
-    //print("time is " + Time.time + " killmon is " + killMon);
-    if (killMon <= Time.time)
-        monTxt.text = "";
+		Destroy (displayMoney);
+    //print("time is " + T	ime.time + " killmon is " + killMon);
+    //if (killMon <= Time.time)
+    //    monTxt.text = "";
 
 }
 

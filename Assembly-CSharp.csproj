@@ -46,7 +46,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+     <Compile Include="Assets\charselect.cs" />
      <Compile Include="Assets\mainscript.cs" />
+     <Compile Include="Assets\startscript.cs" />
      <None Include="Assets\Standard Assets\CrossPlatformInput\CrossPlatformInputGuidelines.txt" />
      <None Include="Assets\Resources\NewSurfaceShader.shader" />
  <Reference Include="UnityEngine.UI">
