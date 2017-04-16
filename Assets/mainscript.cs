@@ -10,17 +10,18 @@ public class mainscript : MonoBehaviour
 
 	bool lvlTimer = false,isScrolling=false,falling=false,
 	mouseHeld=false,tickInflated=false,tickTransitioning=false,
-	inCShop=false,inPShop=false;
+	inCShop=false,inPShop=false,dbleClick=false;
 
 	int currentLvl,subLvl,maxWords,fWordsPointer,activWords,scndLeftTick;
 
-	float startTime,timeLimit,currentScoreInf,
-	curFund,currentScorePrem,scoreGoalInf,scrollAmount,killMon,polInf,bossInf;
+	float startTime,timeLimit,currentCampaignScore,
+	curFund,currentScorePrem,campaignScoreGoal,scrollAmount,killMon,polInf,bossInf,
+	cshMltplr,artic;
 	float[] fWordsTime,fWordsHForce,fWordsVForce,fWordsMoneyPop;
 
-	Sprite[] wordSprites,bgSprites,lisaSprites;
+	Sprite[] wordSprites,bgSprites,lisaSprites,algSprites,grimSprites;
 
-	Text monTxt, lvlTxt, totlMonTxt;
+	Text monTxt, lvlTxt, totlMonTxt,infStat,fundStat,goldStat,artStat;
 	Text[] tickerText;
 
 	GameObject[] fWords;
@@ -56,7 +57,9 @@ public class mainscript : MonoBehaviour
 		fWordsMoneyPop = new float[maxWords]; 
 		curFund = 0f;
 		currentScorePrem = 500f;
+		artic = 1;
 		//polInf = 10f;
+		cshMltplr=1;
 		polInf=charselect.getInf();
 		bossInf = 0f;
 
@@ -67,6 +70,14 @@ public class mainscript : MonoBehaviour
 		tickerText = new Text[2];
 		tickerText[0] = GameObject.Find("ticker1").GetComponent<Text>();
 		tickerText[1] = GameObject.Find("ticker2").GetComponent<Text>();
+		fundStat= GameObject.Find("statFund").GetComponent<Text>();
+		fundStat.text = "Fund " + curFund;
+		goldStat= GameObject.Find("statGold").GetComponent<Text>();
+		goldStat.text = "Gold " + currentScorePrem;
+		artStat= GameObject.Find("statArt").GetComponent<Text>();
+		artStat.text = "Art " + artic;
+		infStat= GameObject.Find("statInf").GetComponent<Text>();
+		infStat.text = "Inf " + polInf;
 
 		//game objects
 		tickerObj = GameObject.Find ("ticker");
@@ -75,24 +86,13 @@ public class mainscript : MonoBehaviour
 		fWords = new GameObject[maxWords];
 
 
-		//animators
-		barAnim = GameObject.Find("bar").GetComponent<Animator>();
-		polAnim = GameObject.Find("politician").GetComponent<Animator>();
-		if (charselect.getString () == "lisa") { //check which character was picked
-			polAnim.Play("lisaIdleTran");
-		}
-		else if (charselect.getString () == "grim") { //check which character was picked
-			polAnim.Play("grimIdleTran");
-		}
-		else if (charselect.getString () == "alg") { //check which character was picked
-			polAnim.Play("algIdleTran");
-		}
-
-
 		//spritesheets
 		wordSprites = Resources.LoadAll<Sprite>("Sprites/wordicons");
 		bgSprites = Resources.LoadAll<Sprite>("Sprites/BGS");
 		lisaSprites = Resources.LoadAll<Sprite>("Sprites/lisa");
+		grimSprites = Resources.LoadAll<Sprite>("Sprites/grimwald");
+		algSprites = Resources.LoadAll<Sprite>("Sprites/algernon");
+
 
 		//spriterenderers
 		bgRenderer = GameObject.Find("bg").GetComponent<SpriteRenderer>();
@@ -103,6 +103,27 @@ public class mainscript : MonoBehaviour
 		{
 			politician.sprite = lisaSprites [0];
 		}
+
+
+		//animators
+		barAnim = GameObject.Find("bar").GetComponent<Animator>();
+		polAnim = GameObject.Find("politician").GetComponent<Animator>();
+		if (charselect.getString () == "lisa") { //check which character was picked
+			polAnim.Play("lisaIdleTran");
+			GameObject.Find("charportrait").GetComponent<SpriteRenderer>().sprite=lisaSprites[13];
+		}
+		else if (charselect.getString () == "grim") { //check which character was picked
+			polAnim.Play("grimIdleTran");
+			GameObject.Find("charportrait").GetComponent<SpriteRenderer>().sprite=grimSprites[11];
+
+		}
+		else if (charselect.getString () == "alg") { //check which character was picked
+			polAnim.Play("algIdleTran");
+			GameObject.Find("charportrait").GetComponent<SpriteRenderer>().sprite=algSprites[17];
+
+		}
+
+
 
 
 		//strings
@@ -127,7 +148,7 @@ public class mainscript : MonoBehaviour
 		}
 
 
-		menu.SetActive (false); //should think of a way to not need this
+		//menu.SetActive (false); //should think of a way to not need this
 
 		initLvlTimer();
 		print("Game initiated.");
@@ -170,7 +191,7 @@ public class mainscript : MonoBehaviour
 		{
 			if (Time.time < timeLimit)//if timelimit not expired
 			{
-				if (currentScoreInf >= scoreGoalInf)//if user reached score threshold
+				if (currentCampaignScore >= campaignScoreGoal)//if user reached score threshold
 				{
 					lvlTimer = false; //turn off timer, advance level and sublevel
 					if (subLvl == 5)//each level has 5 sublevels.
@@ -238,30 +259,31 @@ public class mainscript : MonoBehaviour
 
 	public void startGameScore()
 	{
-		currentScoreInf = 0;
-		scoreGoalInf = (currentLvl * 5) + (subLvl * 5);
+		currentCampaignScore = 0;
+		campaignScoreGoal = (currentLvl * 5) + (subLvl * 5);
 
 	}
 
 	public void addScore(int wordIndex)//adds to current score or money
 	{
-		//each word has a influence and money value, for now we are assuming all influence is 1, so just ++
 
-		//add influence
-		currentScoreInf+=myWords[wordIndex].getIVal();
+		//add campaign score value (CSV) times articulation
+		//arituclation determined by level, clothes, and powerups
+		currentCampaignScore += myWords[wordIndex].getCSV()*artic;;
 		advanceBar();
 
-		//add unique money value based on word
-		curFund += myWords[wordIndex].getMVal();
+		//add unique money value based on word times cash multiplier
+		//cash multiplier determined by powerups, clothes
+		curFund += myWords[wordIndex].getMVal()*cshMltplr;
 		totlMonTxt.text = "$" + curFund; //money display
 
 		polAnimate("Talk");//make animation set to talk
-		//print("clicked. score is " + currentScoreInf + " current money is " + curFund);
+		//print("clicked. score is " + currentCampaignScore + " current money is " + curFund);
 	}
 
-	public void advanceBar() //influence (level score) is displayed by a bar
+	public void advanceBar() //CS (campaign score) is displayed by a bar
 	{
-		float barPos = currentScoreInf / scoreGoalInf;
+		float barPos = currentCampaignScore / campaignScoreGoal;
 
 		if (barPos >= 1) //if bar is full, score reached
 		{
@@ -362,8 +384,11 @@ public class mainscript : MonoBehaviour
 			wordIndex = Random.Range (0, myWords.Length);
 
 			addScore (wordIndex); //adds score
-			//spitWord(wordIndex); //makes words fall from mouth of politician
-			spitWord (wordIndex);
+			spitWord (wordIndex); //make the word spit animation
+			if (dbleClick == true) {
+				addScore (wordIndex);
+				spitWord (wordIndex);
+			}
 
 		} else if (hitCollider.transform.name == "ticker") {
 			inflateDeflate ();
@@ -391,7 +416,7 @@ public class mainscript : MonoBehaviour
 			inCShop = false;
 			//
 			//exampleshop.enabled = false;
-			menu.SetActive (false);
+			//menu.SetActive (false);
 			//
 
 			int childcount = GameObject.Find ("editCanvas").transform.childCount;
@@ -406,7 +431,7 @@ public class mainscript : MonoBehaviour
 
 			//
 			//exampleshop.enabled = false;
-			menu.SetActive (false);
+			//menu.SetActive (false);
 			//
 
 			InvokeRepeating ("inflateTicker", 0.1f, 0.03f);	
@@ -585,23 +610,23 @@ public class mainscript : MonoBehaviour
 
 	public void inflateTicker()
 	{
-		if (tickerObj.transform.localScale.y < 640)
-			tickerObj.transform.localScale += new Vector3 (0, 10, 0);
+		if (menu.transform.localPosition.y <-150)
+			menu.transform.localPosition += new Vector3 (0, 10, 0);
 		else {
 			CancelInvoke ("inflateTicker");
 			tickInflated = true;
 			tickTransitioning = false;
 			//
 			//exampleshop.enabled = true;
-			menu.SetActive (true);
+			//.SetActive (true);
 			//
 		}
 	}
 
 	public void deflateTicker()
 	{
-		if (tickerObj.transform.localScale.y > 80)
-			tickerObj.transform.localScale += new Vector3 (0, -10, 0);
+		if (menu.transform.localPosition.y > -435)
+			menu.transform.localPosition += new Vector3 (0, -10, 0);
 		else {
 			CancelInvoke ("deflateTicker");
 			tickInflated = false;
@@ -810,11 +835,35 @@ public class mainscript : MonoBehaviour
 		float cashCost = 5; //default cost to buy cash
 		float basicCost = 1; //default cost to buy basic
 		float defMVal = 1; //default money value
-		float defIVal = 1; //default influence value
-		premWords = new Word[3]{new Word("terror",wordSprites[5],premCost,0f,defMVal,defIVal),new Word("usa",wordSprites[6],premCost,0f,defMVal,defIVal),new Word("cash3",wordSprites[7],premCost,0f,defMVal,defIVal)};
-		cashWords = new Word[8]{new Word("ok",wordSprites[0],basicCost,1,defMVal,defIVal),new Word("no",wordSprites[1],basicCost,1,defMVal,defIVal),new Word("well",wordSprites[2],basicCost,1,defMVal,defIVal),new Word("pssh",wordSprites[3],basicCost,1,defMVal,defIVal),new Word("yes",wordSprites[4],basicCost,1,defMVal,defIVal),new Word("cash1",wordSprites[8],cashCost,0,defMVal,defIVal),new Word("terrific",wordSprites[9],cashCost,0,defMVal,defIVal),new Word("global",wordSprites[10],cashCost,0,defMVal,defIVal)};
+		float defCSV = 1; //default campaign score value
+		premWords = new Word[3]{new Word("terror",wordSprites[5],premCost,0f,defMVal,defCSV),new Word("usa",wordSprites[6],premCost,0f,defMVal,defCSV),new Word("cash3",wordSprites[7],premCost,0f,defMVal,defCSV)};
+		cashWords = new Word[8]{new Word("ok",wordSprites[0],basicCost,1,defMVal,defCSV),new Word("no",wordSprites[1],basicCost,1,defMVal,defCSV),new Word("well",wordSprites[2],basicCost,1,defMVal,defCSV),new Word("pssh",wordSprites[3],basicCost,1,defMVal,defCSV),new Word("yes",wordSprites[4],basicCost,1,defMVal,defCSV),new Word("cash1",wordSprites[8],cashCost,0,defMVal,defCSV),new Word("terrific",wordSprites[9],cashCost,0,defMVal,defCSV),new Word("global",wordSprites[10],cashCost,0,defMVal,defCSV)};
 		myWords  = new Word[5] {cashWords[0],cashWords[1],cashWords[2],cashWords[3],cashWords[4]};
 	}
+
+	//powerups
+
+	IEnumerator activatePowerup(string powerup, float time){
+
+		if (powerup == "bonusCash") {
+			cshMltplr +=1;
+			yield
+			return new WaitForSeconds (time);
+			cshMltplr -=1;
+		}
+		else if (powerup == "doubleClick") {
+			dbleClick = true;
+			yield
+			return new WaitForSeconds (time);
+			dbleClick = false;
+
+		} 
+
+	}
+
+
+
+	//powerups
 
 	//reset character
 	void resetChar()
@@ -837,6 +886,8 @@ public class mainscript : MonoBehaviour
 
 		//influence is level/10 plus character level/10 plus boss influence
 	}
+	//reset character end
+
 } //end of mainscript class
 
 public class Word
@@ -846,16 +897,16 @@ public class Word
 	float cost;
 	float lvl;
 	float mVal;
-	float iVal;
+	float CSV;
 
-	public Word(string iWordName, Sprite iSprite, float iCost, float iLvl, float iMVal, float iIVal)
+	public Word(string iWordName, Sprite iSprite, float iCost, float iLvl, float iMVal, float iCSV)
 	{
 		wordName = iWordName;
 		sprite = iSprite;
 		cost = iCost;
 		lvl = iLvl;
 		mVal = iMVal;
-		iVal = iIVal; 
+		CSV = iCSV; 
 
 	}
 
@@ -864,9 +915,9 @@ public class Word
 		return mVal;
 	}
 
-	public float getIVal()
+	public float getCSV()
 	{
-		return iVal;
+		return CSV;
 	}
 
 	public Sprite getSprite()
@@ -894,7 +945,7 @@ public class Word
 	{
 		lvl++;
 		mVal ++;
-		iVal ++;
+		CSV ++;
 		cost = cost * 2;
 	}
 }
