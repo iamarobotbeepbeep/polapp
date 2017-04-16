@@ -2,27 +2,28 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 
 public class mainscript : MonoBehaviour
 {
 
-    bool lvlTimer = false,isScrolling=false,falling=false,
+	bool lvlTimer = false,isScrolling=false,falling=false,
 	mouseHeld=false,tickInflated=false,tickTransitioning=false,
 	inCShop=false,inPShop=false;
 
 	int currentLvl,subLvl,maxWords,fWordsPointer,activWords,scndLeftTick;
 
 	float startTime,timeLimit,currentScoreInf,
-	currentScoreMon,currentScorePrem,scoreGoalInf,scrollAmount,killMon;
+	curFund,currentScorePrem,scoreGoalInf,scrollAmount,killMon,polInf,bossInf;
 	float[] fWordsTime,fWordsHForce,fWordsVForce,fWordsMoneyPop;
 
 	Sprite[] wordSprites,bgSprites,lisaSprites;
 
-    Text monTxt, lvlTxt, totlMonTxt;
+	Text monTxt, lvlTxt, totlMonTxt;
 	Text[] tickerText;
 
-    GameObject[] fWords;
+	GameObject[] fWords;
 	GameObject tickerObj,menu,eCanvasBox;
 
 	SpriteRenderer bgRenderer,politician;
@@ -34,8 +35,8 @@ public class mainscript : MonoBehaviour
 	Collider2D heldObj=null;
 	Vector3 mouseOrig;
 
- void Start()
-    {
+	void Start()
+	{
 		//initiate some variables
 
 
@@ -53,16 +54,19 @@ public class mainscript : MonoBehaviour
 		fWordsHForce = new float[maxWords];
 		fWordsVForce = new float[maxWords];
 		fWordsMoneyPop = new float[maxWords]; 
-		currentScoreMon = 0f;
+		curFund = 0f;
 		currentScorePrem = 500f;
+		//polInf = 10f;
+		polInf=charselect.getInf();
+		bossInf = 0f;
 
 		//text variables
-        monTxt = GameObject.Find("monPop").GetComponent<Text>();
-        lvlTxt = GameObject.Find("level").GetComponent<Text>();
-        totlMonTxt = GameObject.Find("money").GetComponent<Text>();
+		monTxt = GameObject.Find("monPop").GetComponent<Text>();
+		lvlTxt = GameObject.Find("level").GetComponent<Text>();
+		totlMonTxt = GameObject.Find("money").GetComponent<Text>();
 		tickerText = new Text[2];
 		tickerText[0] = GameObject.Find("ticker1").GetComponent<Text>();
-        tickerText[1] = GameObject.Find("ticker2").GetComponent<Text>();
+		tickerText[1] = GameObject.Find("ticker2").GetComponent<Text>();
 
 		//game objects
 		tickerObj = GameObject.Find ("ticker");
@@ -71,9 +75,9 @@ public class mainscript : MonoBehaviour
 		fWords = new GameObject[maxWords];
 
 
-        //animators
-        barAnim = GameObject.Find("bar").GetComponent<Animator>();
-        polAnim = GameObject.Find("politician").GetComponent<Animator>();
+		//animators
+		barAnim = GameObject.Find("bar").GetComponent<Animator>();
+		polAnim = GameObject.Find("politician").GetComponent<Animator>();
 		if (charselect.getString () == "lisa") { //check which character was picked
 			polAnim.Play("lisaIdleTran");
 		}
@@ -99,7 +103,7 @@ public class mainscript : MonoBehaviour
 		{
 			politician.sprite = lisaSprites [0];
 		}
-		
+
 
 		//strings
 		tickerStrings= new string[16];
@@ -107,26 +111,26 @@ public class mainscript : MonoBehaviour
 
 
 		//end variable initiations
-        
+
 		initWord (); //set up word arrays, cash words, prem words, and my words
 
 		//init words, i should redo this with a new system.
 		for (int i = 0; i < fWords.Length; i++)
-        {
+		{
 
-            fWords[i] = new GameObject("word" + i);
-            fWords[i].AddComponent<SpriteRenderer>();
-            fWordsRend[i] = fWords[i].GetComponent<SpriteRenderer>();
-            fWordsRend[i].enabled = false;
-            fWordsRend[i].sprite = wordSprites[0];
-            fWordsRend[i].transform.localScale = new Vector3(3, 3, 1);
-        }
-			
+			fWords[i] = new GameObject("word" + i);
+			fWords[i].AddComponent<SpriteRenderer>();
+			fWordsRend[i] = fWords[i].GetComponent<SpriteRenderer>();
+			fWordsRend[i].enabled = false;
+			fWordsRend[i].sprite = wordSprites[0];
+			fWordsRend[i].transform.localScale = new Vector3(3, 3, 1);
+		}
+
 
 		menu.SetActive (false); //should think of a way to not need this
 
 		initLvlTimer();
-        print("Game initiated.");
+		print("Game initiated.");
 
 	}//end of start()
 
@@ -148,41 +152,41 @@ public class mainscript : MonoBehaviour
 				scrollAmount = 5f;
 			else if (scrollAmount < -5f)
 				scrollAmount = -5f;
-				eCanvasBox.transform.localPosition+= new Vector3(0,scrollAmount,0);
-		
+			eCanvasBox.transform.localPosition+= new Vector3(0,scrollAmount,0);
+
 		}
 		else if (Input.GetMouseButtonUp(0)&&mouseHeld==true){
 			//mouse button is released in menu.
 			mouseHeld=false;
 			clickShop (Physics2D.OverlapPoint (Camera.main.ScreenToWorldPoint (Input.mousePosition)));
 			heldObj = null;
-			
+
 		}
 	} //end update()
-  
-    public void FixedUpdate() //handles level timers and checks win condition.
-    {
-        if (lvlTimer)//if level timer running
-        {
-            if (Time.time < timeLimit)//if timelimit not expired
-            {
-                if (currentScoreInf >= scoreGoalInf)//if user reached score threshold
-                {
-                    lvlTimer = false; //turn off timer, advance level and sublevel
-                    if (subLvl == 5)//each level has 5 sublevels.
-                    {
-                        currentLvl++;
-                        subLvl = 0;
-                        lvlTxt.text = currentLvl + "." + subLvl;
+
+	public void FixedUpdate() //handles level timers and checks win condition.
+	{
+		if (lvlTimer)//if level timer running
+		{
+			if (Time.time < timeLimit)//if timelimit not expired
+			{
+				if (currentScoreInf >= scoreGoalInf)//if user reached score threshold
+				{
+					lvlTimer = false; //turn off timer, advance level and sublevel
+					if (subLvl == 5)//each level has 5 sublevels.
+					{
+						currentLvl++;
+						subLvl = 0;
+						lvlTxt.text = currentLvl + "." + subLvl;
 						bgRenderer.sprite = bgSprites [currentLvl];
-                    }
-                    else
-                    {
-                        subLvl++;
-                        lvlTxt.text = currentLvl + "." + subLvl;
-                    }
-                    print("you win. moving to level " + currentLvl + "." + subLvl);
-                    
+					}
+					else
+					{
+						subLvl++;
+						lvlTxt.text = currentLvl + "." + subLvl;
+					}
+					print("you win. moving to level " + currentLvl + "." + subLvl);
+
 					initLvlTimer();//level automatically starts, should change this.
 					//i dont like how level progression is seperate from the bar.
 					//this should be redone as invoke repeating
@@ -191,84 +195,84 @@ public class mainscript : MonoBehaviour
 					//InvokeRepeating ("wordFall", 0.1f, 0.03f);
 					//CancelInvoke("wordFall");
 
-                }
-  
-            }
-            else //if time ran out
-            {
-                lvlTimer = false;
-                print("you lose, restarting level.");
-                initLvlTimer();
-                advanceBar();
-            }
-        }
+				}
+
+			}
+			else //if time ran out
+			{
+				lvlTimer = false;
+				print("you lose, restarting level.");
+				initLvlTimer();
+				advanceBar();
+			}
+		}
 		//scroll tickers and reinstate them
 		if (tickerText [scndLeftTick].rectTransform.position.x <= -10F) {
 			//if the trailing (rightmost ticker) has reached leftmost part of screen
 			//reinstate the leftmost ticker, move it to the right and retext it
 			renewTick();
 		} else {
-		//otherwise scroll
-			tickerText[0].transform.position+= new Vector3(-2,0,0);
-			tickerText[1].transform.position+= new Vector3(-2,0,0);
+			//otherwise scroll
+			tickerText[0].transform.position+= new Vector3(-3,0,0);
+			tickerText[1].transform.position+= new Vector3(-3,0,0);
 
 		}
 
-    } //end fixed update
+	} //end fixed update
 
 
 	public void initLvlTimer()//starts level timer based on level
-    {
-        startGameScore(); //restarts score needed to win level
-        lvlTimer = true;
+	{
+		startGameScore(); //restarts score needed to win level
+		lvlTimer = true;
 
-        if (subLvl == 5) //only sublevel 5 has a time for now
-            timeLimit = 30;
-        else
-            timeLimit = 9999;
+		if (subLvl == 5) //only sublevel 5 has a time for now
+			timeLimit = 30;
+		else
+			timeLimit = 9999;
 
-        startTime = Time.time;
-        timeLimit = startTime + timeLimit;
+		startTime = Time.time;
+		timeLimit = startTime + timeLimit;
 
-    }
+	}
 
-    public void startGameScore()
-    {
-        currentScoreInf = 0;
-        scoreGoalInf = (currentLvl * 5) + (subLvl * 5);
+	public void startGameScore()
+	{
+		currentScoreInf = 0;
+		scoreGoalInf = (currentLvl * 5) + (subLvl * 5);
 
-    }
+	}
 
-    public void addScore(int wordIndex)//adds to current score or money
-    {
-        //each word has a influence and money value, for now we are assuming all influence is 1, so just ++
+	public void addScore(int wordIndex)//adds to current score or money
+	{
+		//each word has a influence and money value, for now we are assuming all influence is 1, so just ++
 
-        //add influence
+		//add influence
 		currentScoreInf+=myWords[wordIndex].getIVal();
-        advanceBar();
+		advanceBar();
 
-        //add unique money value based on word
-		currentScoreMon += myWords[wordIndex].getMVal();
-        totlMonTxt.text = "$" + currentScoreMon; //money display
+		//add unique money value based on word
+		curFund += myWords[wordIndex].getMVal();
+		totlMonTxt.text = "$" + curFund; //money display
 
-        polAnimate("Talk");//make animation set to talk
-        //print("clicked. score is " + currentScoreInf + " current money is " + currentScoreMon);
-    }
+		polAnimate("Talk");//make animation set to talk
+		//print("clicked. score is " + currentScoreInf + " current money is " + curFund);
+	}
 
-    public void advanceBar() //influence (level score) is displayed by a bar
-    {
-        float barPos = currentScoreInf / scoreGoalInf;
+	public void advanceBar() //influence (level score) is displayed by a bar
+	{
+		float barPos = currentScoreInf / scoreGoalInf;
 
-        if (barPos >= 1) //if bar is full, score reached
-        {
-            barAnim.Play("barfull");
-        }
-        else //else choose animation frame based on ratio of curscore to goal score
-            barAnim.Play("barfill", -1, barPos);
-    }
+		if (barPos >= 1) //if bar is full, score reached
+		{
+			barAnim.Play("barfull");
+		}
+		else //else choose animation frame based on ratio of curscore to goal score
+			barAnim.Play("barfill", -1, barPos);
+	}
 
-    public void polAnimate(string state) //change an animation to 'state'
-    {
+	public void polAnimate(string state) //change an animation to 'state'
+	{
 
 		if (charselect.getString () + state=="lisaTalk")
 			polAnim.Play ("lisaTalk");
@@ -276,11 +280,11 @@ public class mainscript : MonoBehaviour
 			polAnim.Play ("grimTalk");
 		else if (charselect.getString () + state=="algTalk")
 			polAnim.Play ("algTalk");
-        //if (state == "talk")
-        //{
-        //    polAnim.Play("talk");
-        //}
-    }
+		//if (state == "talk")
+		//{
+		//    polAnim.Play("talk");
+		//}
+	}
 
 	public void clickShop(Collider2D releasedObj)
 	{
@@ -290,11 +294,11 @@ public class mainscript : MonoBehaviour
 			if (heldObj == null && releasedObj == null) {
 				if (tickTransitioning == false&&tickInflated==true) {
 					inflateDeflate ();
-				
+
 					//reset scrolling
 					eCanvasBox.transform.position = GameObject.Find ("prefabs").transform.position;
 				}
-				} else
+			} else
 				return;
 		}
 		else if (heldObj != releasedObj) {
@@ -302,11 +306,14 @@ public class mainscript : MonoBehaviour
 		} else {
 			if (releasedObj.transform.name == "premium") {
 
-				populateShop("p");
+				populateShop ("p");
 
 			} else if (releasedObj.transform.name == "cash") {
-				populateShop("c");
-			} 
+				populateShop ("c");
+			} else if (releasedObj.transform.name == "reset") {
+				resetChar ();
+
+			}
 
 			else if (inPShop) {
 				if (releasedObj.transform.name.Contains("lvl"))
@@ -332,18 +339,18 @@ public class mainscript : MonoBehaviour
 				}
 			}
 
-		
-		
-		
+
+
+
 		}
 	}
 
 
-    public void click()
-    {
-        //handles clicking
-        Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        Collider2D hitCollider = Physics2D.OverlapPoint(mousePosition);
+	public void click()
+	{
+		//handles clicking
+		Vector2 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		Collider2D hitCollider = Physics2D.OverlapPoint(mousePosition);
 
 		//print ("colider name is " + hitCollider.transform.name);
 
@@ -361,8 +368,8 @@ public class mainscript : MonoBehaviour
 		} else if (hitCollider.transform.name == "ticker") {
 			inflateDeflate ();
 		}
-        //end method
-    }
+		//end method
+	}
 
 	public void inflateDeflate()
 	{
@@ -404,15 +411,15 @@ public class mainscript : MonoBehaviour
 
 			InvokeRepeating ("inflateTicker", 0.1f, 0.03f);	
 		}
-	
-	//end method
+
+		//end method
 	}
 
 	public void populateShop(string type)
 	{
 		float yoffset = 90f;
 		if (type == "p") {
-		
+
 			print ("in premium shop");
 			inPShop = true;
 			menu.SetActive (false);
@@ -424,31 +431,31 @@ public class mainscript : MonoBehaviour
 			for (int i=0; i<premWords.Length;i++)
 			{
 				print ("iteration is " + i);
-				
+
 				SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,i*yoffset,0), prefabIcon.transform.rotation) as SpriteRenderer;
-			tempIcon.enabled = true;
-			tempIcon.sprite = premWords [i].getSprite();
-			tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+				tempIcon.enabled = true;
+				tempIcon.sprite = premWords [i].getSprite();
+				tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
 				Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,i*yoffset,0), prefabName.transform.rotation) as Text;
-			tempTextName.text = premWords[i].getWordName();
-			tempTextName.enabled = true;
-			tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+				tempTextName.text = premWords[i].getWordName();
+				tempTextName.enabled = true;
+				tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
 				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,i*yoffset,1), prefabLvl.transform.rotation) as SpriteRenderer;
-			tempLvl.enabled = true;
-			tempLvl.transform.name = "lvl"+i;
-			tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [i].getlvl() / 5f);
+				tempLvl.enabled = true;
+				tempLvl.transform.name = "lvl"+i;
+				tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [i].getlvl() / 5f);
 
-			tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+				tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
 				Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,i*yoffset,0), prefabCost.transform.rotation) as Text;
 				tempTextCost.text = "upgrade $" + premWords[i].getCost();
-			tempTextCost.enabled = true;
-			tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+				tempTextCost.enabled = true;
+				tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 			}//end ploop
 		}//end p if
@@ -540,7 +547,7 @@ public class mainscript : MonoBehaviour
 			float cost = purchaseWord.getCost () * purchaseWord.getlvl ();
 			if (purchaseWord.getlvl () == 0f) {
 				cost = purchaseWord.getCost ();
-				if (currentScoreMon > cost) {
+				if (curFund > cost) {
 					purchaseWord.initLvl ();
 					Word[] temparray = new Word [myWords.Length + 1];
 					for (int i = 0; i < myWords.Length; i++) {
@@ -548,11 +555,11 @@ public class mainscript : MonoBehaviour
 					}
 					temparray [myWords.Length] = purchaseWord;
 					myWords = temparray;
-					currentScoreMon -= cost;
+					curFund -= cost;
 
 					//print ("bought word " + purchaseWord.getWordName ());
 
-					print ("bought level, cash is now " + currentScoreMon);
+					print ("bought level, cash is now " + curFund);
 
 				}else {
 					print ("not enough cash to buy skill");
@@ -561,10 +568,10 @@ public class mainscript : MonoBehaviour
 			} else if (purchaseWord.getlvl () >= 4f) {
 				print ("max level");
 				return;
-			} else if (currentScoreMon > cost) {
-				currentScoreMon -= cost;
+			} else if (curFund > cost) {
+				curFund -= cost;
 				purchaseWord.raiseLvl ();
-				print ("raised level, cash is now " + currentScoreMon);
+				print ("raised level, cash is now " + curFund);
 			}
 			else {
 				print ("not enough cash to upgrade skill");
@@ -578,7 +585,7 @@ public class mainscript : MonoBehaviour
 
 	public void inflateTicker()
 	{
-		if (tickerObj.transform.localScale.y < 620)
+		if (tickerObj.transform.localScale.y < 640)
 			tickerObj.transform.localScale += new Vector3 (0, 10, 0);
 		else {
 			CancelInvoke ("inflateTicker");
@@ -639,7 +646,7 @@ public class mainscript : MonoBehaviour
 			InvokeRepeating ("wordFall", 0.1f, 0.03f);
 		}
 		//InvokeRepeating("LaunchProjectile", 2.0f, 0.3f);
-	
+
 	}
 	void wordFall()
 	{
@@ -696,20 +703,20 @@ public class mainscript : MonoBehaviour
 		//if they are to expire, remove them from array.
 	}
 
-			public void killWord(int index)
-			{
-				//Destroy (fWords [index]);
-				//fWords [index] = null;
-				fWordsRend[index].enabled = false;
-				StartCoroutine(displayMoney(fWordsRend[index].transform.position, fWordsMoneyPop[index]));
-				//fWordsTime[index]=0;
-				//fWordsHForce[index]=0;
-				//fWordsVForce[index]=0;
-			}
+	public void killWord(int index)
+	{
+		//Destroy (fWords [index]);
+		//fWords [index] = null;
+		fWordsRend[index].enabled = false;
+		StartCoroutine(displayMoney(fWordsRend[index].transform.position, fWordsMoneyPop[index]));
+		//fWordsTime[index]=0;
+		//fWordsHForce[index]=0;
+		//fWordsVForce[index]=0;
+	}
 
 
 
-    
+
 
 
 
@@ -721,14 +728,14 @@ public class mainscript : MonoBehaviour
 		displayMoney.transform.SetParent (GameObject.Find ("gameui").transform, false);
 		//monTxt.text = "+" + scoreindex;
 
-    yield
-    return new WaitForSeconds(1);
+		yield
+		return new WaitForSeconds(1);
 		Destroy (displayMoney);
-    //print("time is " + T	ime.time + " killmon is " + killMon);
-    //if (killMon <= Time.time)
-    //    monTxt.text = "";
+		//print("time is " + T	ime.time + " killmon is " + killMon);
+		//if (killMon <= Time.time)
+		//    monTxt.text = "";
 
-}
+	}
 
 	/****menu methods***/
 	/**ticker methods***/
@@ -770,7 +777,7 @@ public class mainscript : MonoBehaviour
 		int randomint = Random.Range(0,tickerStrings.Length); 
 
 		//set width to fit new text. i think 100 width is like 5 letters
-		tickerText [tickIndex].rectTransform.sizeDelta = new Vector2 (tickerStrings [randomint].Length*21, 46);
+		tickerText [tickIndex].rectTransform.sizeDelta = new Vector2 (tickerStrings [randomint].Length*30, 46);
 
 		//calculate its new x. trailling tickers x + length.
 		float startx = tickerText[scndLeftTick].rectTransform.position.x;
@@ -792,7 +799,7 @@ public class mainscript : MonoBehaviour
 		if (scndLeftTick >= tickerText.Length) {
 			scndLeftTick = 0;
 		}
-			
+
 	}//end renewTick
 
 
@@ -809,7 +816,27 @@ public class mainscript : MonoBehaviour
 		myWords  = new Word[5] {cashWords[0],cashWords[1],cashWords[2],cashWords[3],cashWords[4]};
 	}
 
+	//reset character
+	void resetChar()
+	{
+		/*
+		lvlTimer = 0;
+		polInf = currentLvl / 10 + bossInf;
+		curFund = 0;
+		currentLvl = 1;
+		subLvl = 1;
+		deflateTicker();
+		initLvlTimer;
+*/     
+		float newInf = currentLvl / 10 + bossInf + 10;
+		charselect.setInf (newInf);
+		Scene scene = SceneManager.GetActiveScene ();
+		SceneManager.LoadScene (scene.name);
+		//deflate shop
+		//reset level
 
+		//influence is level/10 plus character level/10 plus boss influence
+	}
 } //end of mainscript class
 
 public class Word
@@ -829,7 +856,7 @@ public class Word
 		lvl = iLvl;
 		mVal = iMVal;
 		iVal = iIVal; 
-		
+
 	}
 
 	public float getMVal()

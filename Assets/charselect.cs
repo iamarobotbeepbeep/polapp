@@ -9,6 +9,7 @@ public class charselect : MonoBehaviour {
 
 	SpriteRenderer algfg, lisafg, grimfg;
 	public static string charstring = "lisa";
+	public static float polInf = 10;
 
 	// Use this for initialization
 	void Start () {
@@ -30,6 +31,19 @@ public class charselect : MonoBehaviour {
 	{
 		return charstring;
 	}
+
+	public static void setInf(float newV)
+	{
+		polInf = newV;
+		return;
+	}
+
+
+	public static float getInf()
+	{
+		return polInf;
+	}
+
 
 	void click(){
 

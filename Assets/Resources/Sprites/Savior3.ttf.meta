@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 6fb17edb904238b4e8a83ad638c093c5
+timeCreated: 1492275122
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Savior3
+  fontNames:
+  - Savior3
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

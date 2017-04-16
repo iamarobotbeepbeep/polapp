@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 40f27831fab06b942a215eb79944b4a9
+timeCreated: 1492275122
+licenseType: Free
+TrueTypeFontImporter:
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: -2
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontName: Savior6
+  fontNames:
+  - Savior6
+  fallbackFontReferences: []
+  customCharacters: 
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
