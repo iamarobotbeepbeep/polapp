@@ -16,7 +16,7 @@
       sampler2D _MainTex;
       sampler2D _BumpMap;
       void surf (Input IN, inout SurfaceOutput o) {
-          clip (IN.worldPos.y*-1+(-205));
+          clip (0);
           o.Albedo = tex2D (_MainTex, IN.uv_MainTex).rgb;
           o.Normal = UnpackNormal (tex2D (_BumpMap, IN.uv_BumpMap));
       }

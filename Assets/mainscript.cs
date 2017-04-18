@@ -157,22 +157,27 @@ public class mainscript : MonoBehaviour
 
 	public void Update() //update looks for mouse clicks, and handles them.
 	{
-		if (Input.GetMouseButtonDown (0) && !tickInflated){
+		if (Input.GetMouseButtonDown (0) && !tickInflated) {
 			//regular click, menu is not open.
 			click ();
-		}
-		else if (Input.GetMouseButtonDown (0) && mouseHeld == false) {
+		} else if (Input.GetMouseButtonDown (0) && mouseHeld == false) {
 			//regular click, menu is open. mouse is in 'held down' state.
 			mouseHeld = true;
 			mouseOrig = Camera.main.ScreenToWorldPoint (Input.mousePosition);
 			heldObj = Physics2D.OverlapPoint (Camera.main.ScreenToWorldPoint (Input.mousePosition));
-		} else if (Input.GetMouseButtonUp(0)==false && heldObj!=null) {
+		} else if (Input.GetMouseButtonUp (0) == false && heldObj != null) {
 			//mouse is held. use it to scroll menu.
-			scrollAmount=Camera.main.ScreenToWorldPoint (Input.mousePosition).y-mouseOrig.y;
-			if (scrollAmount > 5f)
+			scrollAmount = Camera.main.ScreenToWorldPoint (Input.mousePosition).y - mouseOrig.y;
+			if (scrollAmount > 5f) {
 				scrollAmount = 5f;
-			else if (scrollAmount < -5f)
+				if (eCanvasBox.transform.localPosition.y >= 500)
+					scrollAmount = 0;
+			} else if (scrollAmount < -5f)
+			{
 				scrollAmount = -5f;
+			if (eCanvasBox.transform.localPosition.y <= -79)
+				scrollAmount = 0;
+		}
 			eCanvasBox.transform.localPosition+= new Vector3(0,scrollAmount,0);
 
 		}
@@ -311,7 +316,7 @@ public class mainscript : MonoBehaviour
 	public void clickShop(Collider2D releasedObj)
 	{
 
-
+		//print (releasedObj.transform.name);
 		if (heldObj == null || releasedObj == null) {
 			if (heldObj == null && releasedObj == null) {
 				if (tickTransitioning == false&&tickInflated==true) {
@@ -326,39 +331,37 @@ public class mainscript : MonoBehaviour
 		else if (heldObj != releasedObj) {
 			return;
 		} else {
-			if (releasedObj.transform.name == "premium") {
-
-				populateShop ("p");
-
-			} else if (releasedObj.transform.name == "cash") {
-				populateShop ("c");
-			} else if (releasedObj.transform.name == "reset") {
-				resetChar ();
+			if (releasedObj.transform.name == "words") {
+				//if i click words make a word list
+				populateWordList ();
 
 			}
 
-			else if (inPShop) {
-				if (releasedObj.transform.name.Contains("lvl"))
+			else if (releasedObj.transform.name.Contains("cword"))
 				{
-					string wrdindex = releasedObj.transform.name.Substring (3);
+				
+					string wrdindex = releasedObj.transform.name.Substring (5);
 					int intindex = int.Parse (wrdindex);
-					purchaseLvl (premWords[intindex],"p");
-					releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
+				print ("pick c " + intindex);
+
+				//print ("color is " + GameObject.Find ("prefabCostD").GetComponent<Text> ().color);
+				GameObject.Find ("prefabCostD").GetComponent<Text> ().color= new Color (0f,0.765f,0.385f,1f); 
+					    upgradeWord (cashWords[intindex]);
+				//purchaseLvl (premWords[intindex],"p");
+				//	releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
 					//barAnim.Play("barfill", -1, barPos);
 				}
-			}
-			else if (inCShop) {
-				if (releasedObj.transform.name.Contains("lvl"))
-				{
-					string wrdindex = releasedObj.transform.name.Substring (3);
-					int intindex = int.Parse (wrdindex);
+			else if (releasedObj.transform.name.Contains("pword"))
+			{
 
-					//print ("you are buying " + cashWords [intindex].getWordName ());
+				string wrdindex = releasedObj.transform.name.Substring (5);
+				int intindex = int.Parse (wrdindex);
+				print ("pick p " + intindex);
+				GameObject.Find ("prefabCostD").GetComponent<Text> ().color= new Color (1f,0.92f,0.016f,1f); 
+				upgradeWord (premWords[intindex]);
 
-					purchaseLvl (cashWords[intindex],"c");
-					releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [intindex].getlvl() / 5f);
-					//barAnim.Play("barfill", -1, barPos);
-				}
+				//barAnim.Play("barfill", -1, barPos);
+			
 			}
 
 
@@ -412,8 +415,8 @@ public class mainscript : MonoBehaviour
 
 		} else if (tickInflated) {//tick is big, set tick to shrink
 			tickTransitioning = true;
-			inPShop = false;
-			inCShop = false;
+			//inPShop = false;
+			//inCShop = false;
 			//
 			//exampleshop.enabled = false;
 			//menu.SetActive (false);
@@ -428,6 +431,8 @@ public class mainscript : MonoBehaviour
 			InvokeRepeating ("deflateTicker", 0.1f, 0.03f);	
 		} else {//tick is small, set tick to grow
 			tickTransitioning = true;
+			GameObject.Find("defSubMenu").SetActive(true);
+			GameObject.Find("defPortrait").SetActive(true);
 
 			//
 			//exampleshop.enabled = false;
@@ -438,95 +443,6 @@ public class mainscript : MonoBehaviour
 		}
 
 		//end method
-	}
-
-	public void populateShop(string type)
-	{
-		float yoffset = 90f;
-		if (type == "p") {
-
-			print ("in premium shop");
-			inPShop = true;
-			menu.SetActive (false);
-			Text prefabName = GameObject.Find ("prefabName").GetComponent<Text> ();
-			Text prefabCost = GameObject.Find ("prefabCost").GetComponent<Text> (); 
-			SpriteRenderer prefabIcon = GameObject.Find ("prefabIcon").GetComponent<SpriteRenderer> ();
-			SpriteRenderer prefabLvl = GameObject.Find ("prefabLvl").GetComponent<SpriteRenderer> ();
-
-			for (int i=0; i<premWords.Length;i++)
-			{
-				print ("iteration is " + i);
-
-				SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,i*yoffset,0), prefabIcon.transform.rotation) as SpriteRenderer;
-				tempIcon.enabled = true;
-				tempIcon.sprite = premWords [i].getSprite();
-				tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-				Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,i*yoffset,0), prefabName.transform.rotation) as Text;
-				tempTextName.text = premWords[i].getWordName();
-				tempTextName.enabled = true;
-				tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,i*yoffset,1), prefabLvl.transform.rotation) as SpriteRenderer;
-				tempLvl.enabled = true;
-				tempLvl.transform.name = "lvl"+i;
-				tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [i].getlvl() / 5f);
-
-				tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-				Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,i*yoffset,0), prefabCost.transform.rotation) as Text;
-				tempTextCost.text = "upgrade $" + premWords[i].getCost();
-				tempTextCost.enabled = true;
-				tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-			}//end ploop
-		}//end p if
-
-
-		if (type == "c") {
-
-			print ("in cash shop");
-			inCShop = true;
-			menu.SetActive (false);
-			Text prefabName = GameObject.Find ("prefabName").GetComponent<Text> ();
-			Text prefabCost = GameObject.Find ("prefabCost").GetComponent<Text> (); 
-			SpriteRenderer prefabIcon = GameObject.Find ("prefabIcon").GetComponent<SpriteRenderer> ();
-			SpriteRenderer prefabLvl = GameObject.Find ("prefabLvl").GetComponent<SpriteRenderer> ();
-
-			for (int i=0; i<cashWords.Length;i++)
-			{
-				print ("iteration is " + i);
-
-				SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,i*yoffset,-1), prefabIcon.transform.rotation) as SpriteRenderer;
-				tempIcon.enabled = true;
-				tempIcon.sprite = cashWords [i].getSprite();
-				tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-				Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,i*yoffset,-1), prefabName.transform.rotation) as Text;
-				tempTextName.text = cashWords[i].getWordName();
-				tempTextName.enabled = true;
-				tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,i*yoffset,1), prefabLvl.transform.rotation) as SpriteRenderer;
-				tempLvl.enabled = true;
-				tempLvl.transform.name = "lvl"+i;
-				tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [i].getlvl() / 5f);
-
-				tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-				Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,i*yoffset,-1), prefabCost.transform.rotation) as Text;
-				tempTextCost.text = "upgrade $" + cashWords[i].getCost();
-				tempTextCost.enabled = true;
-				tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-			}//end ploop
-		}//end p if
 	}
 
 	public void purchaseLvl(Word purchaseWord, string type)
@@ -755,7 +671,7 @@ public class mainscript : MonoBehaviour
 
 		yield
 		return new WaitForSeconds(1);
-		Destroy (displayMoney);
+		Destroy (displayMoney.gameObject);
 		//print("time is " + T	ime.time + " killmon is " + killMon);
 		//if (killMon <= Time.time)
 		//    monTxt.text = "";
@@ -763,6 +679,173 @@ public class mainscript : MonoBehaviour
 	}
 
 	/****menu methods***/
+
+	/*** menu word list ***/
+
+
+	public void populateWordList ()
+	{
+		//list all words, cash words then premium words
+
+		float yoffset = 64f;
+
+		//print ("in premium shop");
+		//	inPShop = true;
+		GameObject.Find("defSubMenu").SetActive(false);
+		GameObject.Find("defPortrait").SetActive(false);
+			
+
+
+		Text prefabName = GameObject.Find ("prefabName").GetComponent<Text> ();
+		Text prefabCost = GameObject.Find ("prefabCost").GetComponent<Text> (); 
+		SpriteRenderer prefabIcon = GameObject.Find ("prefabIcon").GetComponent<SpriteRenderer> ();
+		SpriteRenderer prefabLvl = GameObject.Find ("prefabLvl").GetComponent<SpriteRenderer> ();
+		SpriteRenderer prefabBrdr = GameObject.Find ("prefabBorder").GetComponent<SpriteRenderer> ();
+
+		int totlwrds = 0;
+
+			for (int i=0; i<cashWords.Length;i++) //fill cash then prem
+			{
+				print ("iteration is " + i);
+
+				SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabIcon.transform.rotation) as SpriteRenderer;
+				tempIcon.enabled = true;
+				tempIcon.sprite = cashWords [i].getSprite();
+				tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+				Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabName.transform.rotation) as Text;
+			    tempTextName.transform.name = "cword"+i;
+			    tempTextName.text = cashWords[i].getWordName();
+				tempTextName.enabled = true;
+			    tempTextName.gameObject.GetComponent<BoxCollider2D> ().enabled = true;
+				tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabLvl.transform.rotation) as SpriteRenderer;
+				tempLvl.enabled = true;
+				tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [i].getlvl() / 5f);
+				tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+				Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabCost.transform.rotation) as Text;
+				tempTextCost.text = ""+cashWords[i].getCost();
+				tempTextCost.enabled = true;
+				tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+			    SpriteRenderer tempBorder = Instantiate (prefabBrdr, prefabBrdr.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabBrdr.transform.rotation) as SpriteRenderer;
+			    tempBorder.enabled = true;
+			    tempBorder.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+			totlwrds++;
+
+			}//end cloop
+
+
+		for (int i=0; i<premWords.Length;i++) 
+		{
+			print ("iteration is " + i);
+
+			SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabIcon.transform.rotation) as SpriteRenderer;
+			tempIcon.enabled = true;
+			tempIcon.sprite = premWords [i].getSprite();
+			tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabName.transform.rotation) as Text;
+			tempTextName.transform.name = "pword"+i;
+			tempTextName.text = premWords[i].getWordName();
+			tempTextName.enabled = true;
+			tempTextName.gameObject.GetComponent<BoxCollider2D> ().enabled = true;
+			tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabLvl.transform.rotation) as SpriteRenderer;
+			tempLvl.enabled = true;
+			tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [i].getlvl() / 5f);
+			tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabCost.transform.rotation) as Text;
+			tempTextCost.text = ""+premWords[i].getCost();
+			tempTextCost.color = new Color (1f,0.92f,0.016f,1f);
+			tempTextCost.enabled = true;
+			tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			SpriteRenderer tempBorder = Instantiate (prefabBrdr, prefabBrdr.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabBrdr.transform.rotation) as SpriteRenderer;
+			tempBorder.enabled = true;
+			tempBorder.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			totlwrds++;
+		}//end ploop
+
+	}
+
+
+	/**end menu word list**/
+	/**wordupgrade menu**/
+	public void upgradeWord(Word word){
+
+		int childcount = GameObject.Find ("editCanvas").transform.childCount;
+		for (int i = 0; i < childcount; i++) {
+			Destroy (GameObject.Find ("editCanvas").transform.GetChild (i).gameObject);
+		}
+
+		eCanvasBox.transform.position = GameObject.Find ("prefabs").transform.position;
+
+
+		print ("in");
+		SpriteRenderer prefabIcon = GameObject.Find ("prefabIconD").GetComponent<SpriteRenderer> ();
+		Text prefabName = GameObject.Find ("prefabNameD").GetComponent<Text> ();
+		SpriteRenderer prefabLvl = GameObject.Find ("prefabLvlD").GetComponent<SpriteRenderer> ();
+		Text prefabUpgrade = GameObject.Find ("prefabUpgradeD").GetComponent<Text> ();
+		Text prefabCost = GameObject.Find ("prefabCostD").GetComponent<Text> (); 
+		Text prefabDesc = GameObject.Find ("prefabDescD").GetComponent<Text> (); 
+		Text prefabLvlDesc = GameObject.Find ("prefabLvlDescD").GetComponent<Text> (); 
+
+	
+		SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition, prefabIcon.transform.rotation) as SpriteRenderer;
+		tempIcon.enabled = true;
+		tempIcon.sprite = word.getSprite();
+		tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+		Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition, prefabName.transform.rotation) as Text;
+		tempTextName.text = word.getWordName();
+		tempTextName.enabled = true;
+		tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+		SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition, prefabLvl.transform.rotation) as SpriteRenderer;
+		tempLvl.enabled = true;
+		tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, word.getlvl() / 5f);
+		tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+		Text tempTextUpgrade = Instantiate (prefabUpgrade, prefabUpgrade.transform.localPosition, prefabUpgrade.transform.rotation) as Text;
+		tempTextUpgrade.enabled = true;
+		tempTextUpgrade.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+		Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition, prefabCost.transform.rotation) as Text;
+		tempTextCost.text = ""+word.getCost();
+		tempTextCost.enabled = true;
+		tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+		Text tempTextDesc = Instantiate (prefabDesc, prefabDesc.transform.localPosition, prefabDesc.transform.rotation) as Text;
+		tempTextDesc.enabled = true;
+		tempTextDesc.text = word.getDesc ();
+		tempTextDesc.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+		Text tempTextLvlDesc = Instantiate (prefabLvlDesc, prefabLvlDesc.transform.localPosition, prefabLvlDesc.transform.rotation) as Text;
+		tempTextLvlDesc.enabled = true;
+		tempTextLvlDesc.text = "Next Lvl:" + word.getLvlDesc ((int)word.getlvl());
+		tempTextLvlDesc.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+	}
+
 	/**ticker methods***/
 
 	public void initTick() //fill ticker string array
@@ -836,8 +919,19 @@ public class mainscript : MonoBehaviour
 		float basicCost = 1; //default cost to buy basic
 		float defMVal = 1; //default money value
 		float defCSV = 1; //default campaign score value
-		premWords = new Word[3]{new Word("terror",wordSprites[5],premCost,0f,defMVal,defCSV),new Word("usa",wordSprites[6],premCost,0f,defMVal,defCSV),new Word("cash3",wordSprites[7],premCost,0f,defMVal,defCSV)};
-		cashWords = new Word[8]{new Word("ok",wordSprites[0],basicCost,1,defMVal,defCSV),new Word("no",wordSprites[1],basicCost,1,defMVal,defCSV),new Word("well",wordSprites[2],basicCost,1,defMVal,defCSV),new Word("pssh",wordSprites[3],basicCost,1,defMVal,defCSV),new Word("yes",wordSprites[4],basicCost,1,defMVal,defCSV),new Word("cash1",wordSprites[8],cashCost,0,defMVal,defCSV),new Word("terrific",wordSprites[9],cashCost,0,defMVal,defCSV),new Word("global",wordSprites[10],cashCost,0,defMVal,defCSV)};
+		premWords = new Word[3]{
+			new Word("terror",wordSprites[5],premCost,0f,defMVal,defCSV,"High value, but reduces budget",new string[]{"Get word","More Value","Less Cost","More Value"}),
+			new Word("usa",wordSprites[6],premCost,0f,defMVal,defCSV, "Value increases as level increases",new string[]{"Get word","More Value","Higher bonus","More Value"}),
+				new Word("cash3",wordSprites[7],premCost,0f,defMVal,defCSV,"No value, but double budget",new string[]{"Get word","More Budget","More Budget","More Budget"})};
+		cashWords = new Word[8]{
+			new Word("ok",wordSprites[0],basicCost,1,defMVal,defCSV,"Just OK",new string[]{"Get word","More Value","More Budget","More Value"}),
+			new Word("no",wordSprites[1],basicCost,1,defMVal,defCSV,"Basic rebuttal, nullify words",new string[]{"Get word","More Effective","More Effective","More Effective"}),
+			new Word("well",wordSprites[2],basicCost,1,defMVal,defCSV,"Basic critical strike",new string[]{"Get word","More Effective","More Effective","More Effective"}),
+			new Word("pssh",wordSprites[3],basicCost,1,defMVal,defCSV,"Basic rebuttal, attempt to turn words",new string[]{"Get word","More Effective","More Effective","More Effective"}),
+				new Word("yes",wordSprites[4],basicCost,1,defMVal,defCSV,"A half-hearted yes",new string[]{"Get word","More Budget","More Value","More Budget"}),
+				new Word("cash1",wordSprites[8],cashCost,0,defMVal,defCSV,"Beg for cash",new string[]{"Get word","More Budget","More Value","More Budget"}),
+				new Word("terrific",wordSprites[9],cashCost,0,defMVal,defCSV,"Everything's great, thanks",new string[]{"Get word","More Value","More Budget","More Value"}),
+				new Word("global",wordSprites[10],cashCost,0,defMVal,defCSV,"Bum people out, reduce word values",new string[]{"Get word","More Effective","More Effective","More Effective"})};
 		myWords  = new Word[5] {cashWords[0],cashWords[1],cashWords[2],cashWords[3],cashWords[4]};
 	}
 
@@ -893,13 +987,15 @@ public class mainscript : MonoBehaviour
 public class Word
 {
 	string wordName;
+	string desc;
+	string[] lvlDesc;
 	Sprite sprite;
 	float cost;
 	float lvl;
 	float mVal;
 	float CSV;
 
-	public Word(string iWordName, Sprite iSprite, float iCost, float iLvl, float iMVal, float iCSV)
+	public Word(string iWordName, Sprite iSprite, float iCost, float iLvl, float iMVal, float iCSV, string iDesc, string[] iLvlDesc)
 	{
 		wordName = iWordName;
 		sprite = iSprite;
@@ -907,6 +1003,8 @@ public class Word
 		lvl = iLvl;
 		mVal = iMVal;
 		CSV = iCSV; 
+		desc = iDesc;
+		lvlDesc = iLvlDesc;
 
 	}
 
@@ -947,5 +1045,13 @@ public class Word
 		mVal ++;
 		CSV ++;
 		cost = cost * 2;
+	}
+	public string getDesc()
+	{
+		return desc;
+	}
+	public string getLvlDesc(int index)
+	{
+		return lvlDesc [index];
 	}
 }
