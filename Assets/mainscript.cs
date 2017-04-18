@@ -25,7 +25,7 @@ public class mainscript : MonoBehaviour
 	Text[] tickerText;
 
 	GameObject[] fWords;
-	GameObject tickerObj,menu,eCanvasBox;
+	GameObject tickerObj,menu,eCanvasBox,subMenu,portraitMenu;
 
 	SpriteRenderer bgRenderer,politician;
 	SpriteRenderer[] fWordsRend;
@@ -84,7 +84,8 @@ public class mainscript : MonoBehaviour
 		eCanvasBox=GameObject.Find("editCanvas");
 		menu=GameObject.Find ("menu");
 		fWords = new GameObject[maxWords];
-
+		subMenu=GameObject.Find("defSubMenu");
+		portraitMenu=GameObject.Find("defPortrait");
 
 		//spritesheets
 		wordSprites = Resources.LoadAll<Sprite>("Sprites/wordicons");
@@ -323,7 +324,7 @@ public class mainscript : MonoBehaviour
 					inflateDeflate ();
 
 					//reset scrolling
-					eCanvasBox.transform.position = GameObject.Find ("prefabs").transform.position;
+					eCanvasBox.transform.position = GameObject.Find ("exampleshop").transform.position;
 				}
 			} else
 				return;
@@ -335,33 +336,39 @@ public class mainscript : MonoBehaviour
 				//if i click words make a word list
 				populateWordList ();
 
-			}
-
-			else if (releasedObj.transform.name.Contains("cword"))
-				{
+			} else if (releasedObj.transform.name.Contains ("cword")) {
 				
-					string wrdindex = releasedObj.transform.name.Substring (5);
-					int intindex = int.Parse (wrdindex);
+				string wrdindex = releasedObj.transform.name.Substring (5);
+				int intindex = int.Parse (wrdindex);
 				print ("pick c " + intindex);
 
 				//print ("color is " + GameObject.Find ("prefabCostD").GetComponent<Text> ().color);
-				GameObject.Find ("prefabCostD").GetComponent<Text> ().color= new Color (0f,0.765f,0.385f,1f); 
-					    upgradeWord (cashWords[intindex]);
+				GameObject.Find ("prefabCostD").GetComponent<Text> ().color = new Color (0f, 0.765f, 0.385f, 1f); 
+				upgradeWord (cashWords [intindex],"c"+intindex);
 				//purchaseLvl (premWords[intindex],"p");
 				//	releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
-					//barAnim.Play("barfill", -1, barPos);
-				}
-			else if (releasedObj.transform.name.Contains("pword"))
-			{
+				//barAnim.Play("barfill", -1, barPos);
+			} else if (releasedObj.transform.name.Contains ("pword")) {
 
 				string wrdindex = releasedObj.transform.name.Substring (5);
 				int intindex = int.Parse (wrdindex);
 				print ("pick p " + intindex);
-				GameObject.Find ("prefabCostD").GetComponent<Text> ().color= new Color (1f,0.92f,0.016f,1f); 
-				upgradeWord (premWords[intindex]);
+				GameObject.Find ("prefabCostD").GetComponent<Text> ().color = new Color (1f, 0.92f, 0.016f, 1f); 
+				upgradeWord (premWords [intindex],"p"+intindex);
 
-				//barAnim.Play("barfill", -1, barPos);
-			
+				//barAnim.Play("barfill", -1, barPos);			
+			} else if (releasedObj.transform.name.Contains ("upgrade")) {
+				if (releasedObj.transform.name.Contains ("upgradec")) {
+					string wrdindex = releasedObj.transform.name.Substring (8);
+					int intindex = int.Parse (wrdindex);
+					purchaseLvl (cashWords [intindex], "c");
+				}
+				if (releasedObj.transform.name.Contains ("upgradep")) {
+					string wrdindex = releasedObj.transform.name.Substring (8);
+					int intindex = int.Parse (wrdindex);
+					purchaseLvl (premWords [intindex], "p");
+				}
+
 			}
 
 
@@ -431,8 +438,8 @@ public class mainscript : MonoBehaviour
 			InvokeRepeating ("deflateTicker", 0.1f, 0.03f);	
 		} else {//tick is small, set tick to grow
 			tickTransitioning = true;
-			GameObject.Find("defSubMenu").SetActive(true);
-			GameObject.Find("defPortrait").SetActive(true);
+			portraitMenu.SetActive(true);
+			subMenu.SetActive(true);
 
 			//
 			//exampleshop.enabled = false;
@@ -463,6 +470,10 @@ public class mainscript : MonoBehaviour
 					temparray [myWords.Length] = purchaseWord;
 					myWords = temparray;
 					currentScorePrem -= cost;
+					//
+					GameObject.Find("levelp").GetComponent<Animator> ().Play ("lvlfill", -1, purchaseWord.getlvl() / 5f);
+					GameObject.Find ("costp").GetComponent<Text> ().text = "" + purchaseWord.getCost();
+					//
 					print ("bought level, premimum is now " + currentScorePrem);
 				} else {
 					print ("not enough premium to buy skill");
@@ -474,7 +485,12 @@ public class mainscript : MonoBehaviour
 			} else if (currentScorePrem > cost) {
 				currentScorePrem -= cost;
 				purchaseWord.raiseLvl ();
+				//
+				GameObject.Find("levelp").GetComponent<Animator> ().Play ("lvlfill", -1, purchaseWord.getlvl() / 5f);
+				GameObject.Find ("costp").GetComponent<Text> ().text = "" + purchaseWord.getCost();
+				//
 				print ("raised level, premimum is now " + currentScorePrem);
+
 			}
 			else {
 				print ("not enough premium to upgrade skill");
@@ -499,7 +515,10 @@ public class mainscript : MonoBehaviour
 					curFund -= cost;
 
 					//print ("bought word " + purchaseWord.getWordName ());
-
+					//
+					GameObject.Find("levelc").GetComponent<Animator> ().Play ("lvlfill", -1, purchaseWord.getlvl() / 5f);
+					GameObject.Find ("costc").GetComponent<Text> ().text = "" + purchaseWord.getCost();
+					//
 					print ("bought level, cash is now " + curFund);
 
 				}else {
@@ -512,6 +531,10 @@ public class mainscript : MonoBehaviour
 			} else if (curFund > cost) {
 				curFund -= cost;
 				purchaseWord.raiseLvl ();
+				//
+				GameObject.Find("levelc").GetComponent<Animator> ().Play ("lvlfill", -1, purchaseWord.getlvl() / 5f);
+				GameObject.Find ("costc").GetComponent<Text> ().text = "" + purchaseWord.getCost();
+				//
 				print ("raised level, cash is now " + curFund);
 			}
 			else {
@@ -691,8 +714,8 @@ public class mainscript : MonoBehaviour
 
 		//print ("in premium shop");
 		//	inPShop = true;
-		GameObject.Find("defSubMenu").SetActive(false);
-		GameObject.Find("defPortrait").SetActive(false);
+		subMenu.SetActive(false);
+		portraitMenu.SetActive(false);
 			
 
 
@@ -786,7 +809,7 @@ public class mainscript : MonoBehaviour
 
 	/**end menu word list**/
 	/**wordupgrade menu**/
-	public void upgradeWord(Word word){
+	public void upgradeWord(Word word, string wordType){
 
 		int childcount = GameObject.Find ("editCanvas").transform.childCount;
 		for (int i = 0; i < childcount; i++) {
@@ -822,16 +845,21 @@ public class mainscript : MonoBehaviour
 		tempLvl.enabled = true;
 		tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, word.getlvl() / 5f);
 		tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+		tempLvl.name = "level" + wordType.Remove(1);
+
 
 		Text tempTextUpgrade = Instantiate (prefabUpgrade, prefabUpgrade.transform.localPosition, prefabUpgrade.transform.rotation) as Text;
 		tempTextUpgrade.enabled = true;
 		tempTextUpgrade.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
+		tempTextUpgrade.name = "upgrade" + wordType;
+		tempTextUpgrade.gameObject.GetComponent<BoxCollider2D> ().enabled = true;
 
 		Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition, prefabCost.transform.rotation) as Text;
 		tempTextCost.text = ""+word.getCost();
 		tempTextCost.enabled = true;
 		tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+		tempTextCost.name = "cost" + wordType.Remove(1);
+
 
 		Text tempTextDesc = Instantiate (prefabDesc, prefabDesc.transform.localPosition, prefabDesc.transform.rotation) as Text;
 		tempTextDesc.enabled = true;
@@ -928,10 +956,10 @@ public class mainscript : MonoBehaviour
 			new Word("no",wordSprites[1],basicCost,1,defMVal,defCSV,"Basic rebuttal, nullify words",new string[]{"Get word","More Effective","More Effective","More Effective"}),
 			new Word("well",wordSprites[2],basicCost,1,defMVal,defCSV,"Basic critical strike",new string[]{"Get word","More Effective","More Effective","More Effective"}),
 			new Word("pssh",wordSprites[3],basicCost,1,defMVal,defCSV,"Basic rebuttal, attempt to turn words",new string[]{"Get word","More Effective","More Effective","More Effective"}),
-				new Word("yes",wordSprites[4],basicCost,1,defMVal,defCSV,"A half-hearted yes",new string[]{"Get word","More Budget","More Value","More Budget"}),
-				new Word("cash1",wordSprites[8],cashCost,0,defMVal,defCSV,"Beg for cash",new string[]{"Get word","More Budget","More Value","More Budget"}),
-				new Word("terrific",wordSprites[9],cashCost,0,defMVal,defCSV,"Everything's great, thanks",new string[]{"Get word","More Value","More Budget","More Value"}),
-				new Word("global",wordSprites[10],cashCost,0,defMVal,defCSV,"Bum people out, reduce word values",new string[]{"Get word","More Effective","More Effective","More Effective"})};
+			new Word("yes",wordSprites[4],basicCost,1,defMVal,defCSV,"A half-hearted yes",new string[]{"Get word","More Budget","More Value","More Budget"}),
+			new Word("cash1",wordSprites[8],cashCost,0,defMVal,defCSV,"Beg for cash",new string[]{"Get word","More Budget","More Value","More Budget"}),
+			new Word("terrific",wordSprites[9],cashCost,0,defMVal,defCSV,"Everything's great, thanks",new string[]{"Get word","More Value","More Budget","More Value"}),
+			new Word("global",wordSprites[10],cashCost,0,defMVal,defCSV,"Bum people out, reduce word values",new string[]{"Get word","More Effective","More Effective","More Effective"})};
 		myWords  = new Word[5] {cashWords[0],cashWords[1],cashWords[2],cashWords[3],cashWords[4]};
 	}
 
