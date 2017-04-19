@@ -10,16 +10,16 @@ public class mainscript : MonoBehaviour
 
 	bool lvlTimer = false,isScrolling=false,falling=false,
 	mouseHeld=false,tickInflated=false,tickTransitioning=false,
-	inCShop=false,inPShop=false,dbleClick=false;
+	inWordShop=false,inSpeechShop=false,dbleClick=false,dblePwr=false;
 
 	int currentLvl,subLvl,maxWords,fWordsPointer,activWords,scndLeftTick;
 
 	float startTime,timeLimit,currentCampaignScore,
-	curFund,currentScorePrem,campaignScoreGoal,scrollAmount,killMon,polInf,bossInf,
+	curFund,curGold,campaignScoreGoal,scrollAmount,killMon,polInf,bossInf,
 	cshMltplr,artic;
 	float[] fWordsTime,fWordsHForce,fWordsVForce,fWordsMoneyPop;
 
-	Sprite[] wordSprites,bgSprites,lisaSprites,algSprites,grimSprites;
+	Sprite[] wordSprites,bgSprites,lisaSprites,algSprites,grimSprites,powerSprites;
 
 	Text monTxt, lvlTxt, totlMonTxt,infStat,fundStat,goldStat,artStat;
 	Text[] tickerText;
@@ -33,6 +33,7 @@ public class mainscript : MonoBehaviour
 	Animator barAnim, polAnim; 
 	string[] tickerStrings;
 	Word[] premWords,cashWords,myWords;
+	Speech[] speeches;
 	Collider2D heldObj=null;
 	Vector3 mouseOrig;
 
@@ -56,7 +57,7 @@ public class mainscript : MonoBehaviour
 		fWordsVForce = new float[maxWords];
 		fWordsMoneyPop = new float[maxWords]; 
 		curFund = 0f;
-		currentScorePrem = 500f;
+		curGold = 500f;
 		artic = 1;
 		//polInf = 10f;
 		cshMltplr=1;
@@ -73,7 +74,7 @@ public class mainscript : MonoBehaviour
 		fundStat= GameObject.Find("statFund").GetComponent<Text>();
 		fundStat.text = "Fund " + curFund;
 		goldStat= GameObject.Find("statGold").GetComponent<Text>();
-		goldStat.text = "Gold " + currentScorePrem;
+		goldStat.text = "Gold " + curGold;
 		artStat= GameObject.Find("statArt").GetComponent<Text>();
 		artStat.text = "Art " + artic;
 		infStat= GameObject.Find("statInf").GetComponent<Text>();
@@ -93,6 +94,7 @@ public class mainscript : MonoBehaviour
 		lisaSprites = Resources.LoadAll<Sprite>("Sprites/lisa");
 		grimSprites = Resources.LoadAll<Sprite>("Sprites/grimwald");
 		algSprites = Resources.LoadAll<Sprite>("Sprites/algernon");
+		powerSprites = Resources.LoadAll<Sprite>("Sprites/powerups");
 
 
 		//spriterenderers
@@ -135,7 +137,7 @@ public class mainscript : MonoBehaviour
 		//end variable initiations
 
 		initWord (); //set up word arrays, cash words, prem words, and my words
-
+		initSpeeches();
 		//init words, i should redo this with a new system.
 		for (int i = 0; i < fWords.Length; i++)
 		{
@@ -176,9 +178,9 @@ public class mainscript : MonoBehaviour
 			} else if (scrollAmount < -5f)
 			{
 				scrollAmount = -5f;
-			if (eCanvasBox.transform.localPosition.y <= -79)
-				scrollAmount = 0;
-		}
+				if (eCanvasBox.transform.localPosition.y <= -79)
+					scrollAmount = 0;
+			}
 			eCanvasBox.transform.localPosition+= new Vector3(0,scrollAmount,0);
 
 		}
@@ -275,7 +277,8 @@ public class mainscript : MonoBehaviour
 
 		//add campaign score value (CSV) times articulation
 		//arituclation determined by level, clothes, and powerups
-		currentCampaignScore += myWords[wordIndex].getCSV()*artic;;
+		print("artic is " + artic);
+		currentCampaignScore += myWords[wordIndex].getCSV()*artic;
 		advanceBar();
 
 		//add unique money value based on word times cash multiplier
@@ -325,6 +328,8 @@ public class mainscript : MonoBehaviour
 
 					//reset scrolling
 					eCanvasBox.transform.position = GameObject.Find ("exampleshop").transform.position;
+					inWordShop = false;
+					inSpeechShop = false;
 				}
 			} else
 				return;
@@ -334,43 +339,69 @@ public class mainscript : MonoBehaviour
 		} else {
 			if (releasedObj.transform.name == "words") {
 				//if i click words make a word list
+				inWordShop = true;
 				populateWordList ();
 
-			} else if (releasedObj.transform.name.Contains ("cword")) {
-				
-				string wrdindex = releasedObj.transform.name.Substring (5);
-				int intindex = int.Parse (wrdindex);
-				print ("pick c " + intindex);
+			} else if (inWordShop) {
+				if (releasedObj.transform.name.Contains ("cword")) {
 
-				//print ("color is " + GameObject.Find ("prefabCostD").GetComponent<Text> ().color);
-				GameObject.Find ("prefabCostD").GetComponent<Text> ().color = new Color (0f, 0.765f, 0.385f, 1f); 
-				upgradeWord (cashWords [intindex],"c"+intindex);
-				//purchaseLvl (premWords[intindex],"p");
-				//	releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
-				//barAnim.Play("barfill", -1, barPos);
-			} else if (releasedObj.transform.name.Contains ("pword")) {
+					string wrdindex = releasedObj.transform.name.Substring (5);
+					int intindex = int.Parse (wrdindex);
+					print ("pick c " + intindex);
 
-				string wrdindex = releasedObj.transform.name.Substring (5);
-				int intindex = int.Parse (wrdindex);
-				print ("pick p " + intindex);
-				GameObject.Find ("prefabCostD").GetComponent<Text> ().color = new Color (1f, 0.92f, 0.016f, 1f); 
-				upgradeWord (premWords [intindex],"p"+intindex);
+					//print ("color is " + GameObject.Find ("prefabCostD").GetComponent<Text> ().color);
+					GameObject.Find ("prefabCostD").GetComponent<Text> ().color = new Color (0f, 0.765f, 0.385f, 1f); 
+					upgradeWord (cashWords [intindex], "c" + intindex);
+					//purchaseLvl (premWords[intindex],"p");
+					//	releasedObj.transform.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, premWords [intindex].getlvl() / 5f);
+					//barAnim.Play("barfill", -1, barPos);
+				} else if (releasedObj.transform.name.Contains ("pword")) {
 
-				//barAnim.Play("barfill", -1, barPos);			
-			} else if (releasedObj.transform.name.Contains ("upgrade")) {
-				if (releasedObj.transform.name.Contains ("upgradec")) {
+					string wrdindex = releasedObj.transform.name.Substring (5);
+					int intindex = int.Parse (wrdindex);
+					print ("pick p " + intindex);
+					GameObject.Find ("prefabCostD").GetComponent<Text> ().color = new Color (1f, 0.92f, 0.016f, 1f); 
+					upgradeWord (premWords [intindex], "p" + intindex);
+
+					//barAnim.Play("barfill", -1, barPos);			
+				} else if (releasedObj.transform.name.Contains ("upgrade")) {
+					if (releasedObj.transform.name.Contains ("upgradec")) {
+						string wrdindex = releasedObj.transform.name.Substring (8);
+						int intindex = int.Parse (wrdindex);
+						purchaseLvl (cashWords [intindex], "c");
+					}
+					if (releasedObj.transform.name.Contains ("upgradep")) {
+						string wrdindex = releasedObj.transform.name.Substring (8);
+						int intindex = int.Parse (wrdindex);
+						purchaseLvl (premWords [intindex], "p");
+					}
+
+				}
+			} else if (releasedObj.transform.name == "speeches") {
+				populateSpeechList ();
+				inSpeechShop = true;
+			} else if (inSpeechShop) {
+				//print ("inspeech1");
+
+				if (releasedObj.transform.name.Contains("speech")) {
+					print ("inspeech2");
+					string wrdindex = releasedObj.transform.name.Substring (6);
+					int intindex = int.Parse (wrdindex);
+					purchaseSpeech (speeches[intindex],intindex);
+
+				}
+
+				if (releasedObj.transform.name.Contains("activate")) {
+					//print ("inspeech2");
 					string wrdindex = releasedObj.transform.name.Substring (8);
 					int intindex = int.Parse (wrdindex);
-					purchaseLvl (cashWords [intindex], "c");
-				}
-				if (releasedObj.transform.name.Contains ("upgradep")) {
-					string wrdindex = releasedObj.transform.name.Substring (8);
-					int intindex = int.Parse (wrdindex);
-					purchaseLvl (premWords [intindex], "p");
-				}
+					activateSpeech (speeches[intindex], intindex);
+
+				} 
+
+				//print (releasedObj.transform.name);
 
 			}
-
 
 
 
@@ -461,7 +492,7 @@ public class mainscript : MonoBehaviour
 			float cost = purchaseWord.getCost ();
 			if (purchaseWord.getlvl () == 0f) {
 				cost = purchaseWord.getCost ();
-				if (currentScorePrem > cost) {
+				if (curGold > cost) {
 					purchaseWord.initLvl ();
 					Word[] temparray = new Word [myWords.Length + 1];
 					for (int i = 0; i < myWords.Length; i++) {
@@ -469,12 +500,12 @@ public class mainscript : MonoBehaviour
 					}
 					temparray [myWords.Length] = purchaseWord;
 					myWords = temparray;
-					currentScorePrem -= cost;
+					curGold -= cost;
 					//
 					GameObject.Find("levelp").GetComponent<Animator> ().Play ("lvlfill", -1, purchaseWord.getlvl() / 5f);
 					GameObject.Find ("costp").GetComponent<Text> ().text = "" + purchaseWord.getCost();
 					//
-					print ("bought level, premimum is now " + currentScorePrem);
+					print ("bought level, premimum is now " + curGold);
 				} else {
 					print ("not enough premium to buy skill");
 				}
@@ -482,14 +513,14 @@ public class mainscript : MonoBehaviour
 			} else if (purchaseWord.getlvl () >= 4f) {
 				print ("max level");
 				return;
-			} else if (currentScorePrem > cost) {
-				currentScorePrem -= cost;
+			} else if (curGold > cost) {
+				curGold -= cost;
 				purchaseWord.raiseLvl ();
 				//
 				GameObject.Find("levelp").GetComponent<Animator> ().Play ("lvlfill", -1, purchaseWord.getlvl() / 5f);
 				GameObject.Find ("costp").GetComponent<Text> ().text = "" + purchaseWord.getCost();
 				//
-				print ("raised level, premimum is now " + currentScorePrem);
+				print ("raised level, premimum is now " + curGold);
 
 			}
 			else {
@@ -716,7 +747,7 @@ public class mainscript : MonoBehaviour
 		//	inPShop = true;
 		subMenu.SetActive(false);
 		portraitMenu.SetActive(false);
-			
+
 
 
 		Text prefabName = GameObject.Find ("prefabName").GetComponent<Text> ();
@@ -727,42 +758,42 @@ public class mainscript : MonoBehaviour
 
 		int totlwrds = 0;
 
-			for (int i=0; i<cashWords.Length;i++) //fill cash then prem
-			{
-				print ("iteration is " + i);
+		for (int i=0; i<cashWords.Length;i++) //fill cash then prem
+		{
+			print ("iteration is " + i);
 
-				SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabIcon.transform.rotation) as SpriteRenderer;
-				tempIcon.enabled = true;
-				tempIcon.sprite = cashWords [i].getSprite();
-				tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
-
-
-				Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabName.transform.rotation) as Text;
-			    tempTextName.transform.name = "cword"+i;
-			    tempTextName.text = cashWords[i].getWordName();
-				tempTextName.enabled = true;
-			    tempTextName.gameObject.GetComponent<BoxCollider2D> ().enabled = true;
-				tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+			SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabIcon.transform.rotation) as SpriteRenderer;
+			tempIcon.enabled = true;
+			tempIcon.sprite = cashWords [i].getSprite();
+			tempIcon.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
-				SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabLvl.transform.rotation) as SpriteRenderer;
-				tempLvl.enabled = true;
-				tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [i].getlvl() / 5f);
-				tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+			Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabName.transform.rotation) as Text;
+			tempTextName.transform.name = "cword"+i;
+			tempTextName.text = cashWords[i].getWordName();
+			tempTextName.enabled = true;
+			tempTextName.gameObject.GetComponent<BoxCollider2D> ().enabled = true;
+			tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 
-				Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabCost.transform.rotation) as Text;
-				tempTextCost.text = ""+cashWords[i].getCost();
-				tempTextCost.enabled = true;
-				tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+			SpriteRenderer tempLvl = Instantiate (prefabLvl, prefabLvl.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabLvl.transform.rotation) as SpriteRenderer;
+			tempLvl.enabled = true;
+			tempLvl.gameObject.GetComponent<Animator> ().Play ("lvlfill", -1, cashWords [i].getlvl() / 5f);
+			tempLvl.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
-			    SpriteRenderer tempBorder = Instantiate (prefabBrdr, prefabBrdr.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabBrdr.transform.rotation) as SpriteRenderer;
-			    tempBorder.enabled = true;
-			    tempBorder.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+			Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabCost.transform.rotation) as Text;
+			tempTextCost.text = ""+cashWords[i].getCost();
+			tempTextCost.enabled = true;
+			tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+			SpriteRenderer tempBorder = Instantiate (prefabBrdr, prefabBrdr.transform.localPosition-new Vector3(0,totlwrds*yoffset,0), prefabBrdr.transform.rotation) as SpriteRenderer;
+			tempBorder.enabled = true;
+			tempBorder.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
 
 			totlwrds++;
 
-			}//end cloop
+		}//end cloop
 
 
 		for (int i=0; i<premWords.Length;i++) 
@@ -804,10 +835,8 @@ public class mainscript : MonoBehaviour
 			totlwrds++;
 		}//end ploop
 
-	}
+	}/**end menu word list**/
 
-
-	/**end menu word list**/
 	/**wordupgrade menu**/
 	public void upgradeWord(Word word, string wordType){
 
@@ -828,7 +857,7 @@ public class mainscript : MonoBehaviour
 		Text prefabDesc = GameObject.Find ("prefabDescD").GetComponent<Text> (); 
 		Text prefabLvlDesc = GameObject.Find ("prefabLvlDescD").GetComponent<Text> (); 
 
-	
+
 		SpriteRenderer tempIcon = Instantiate (prefabIcon, prefabIcon.transform.localPosition, prefabIcon.transform.rotation) as SpriteRenderer;
 		tempIcon.enabled = true;
 		tempIcon.sprite = word.getSprite();
@@ -873,7 +902,150 @@ public class mainscript : MonoBehaviour
 
 
 	}
+	public void populateSpeechList ()
+	{
+		//list all words, cash words then premium words
 
+		float yoffset = 64f;
+
+		//print ("in premium shop");
+		//	inPShop = true;
+		subMenu.SetActive(false);
+		portraitMenu.SetActive(false);
+
+
+
+		Text prefabName = GameObject.Find ("prefabName").GetComponent<Text> ();
+		Text prefabCost = GameObject.Find ("prefabCost").GetComponent<Text> (); 
+		SpriteRenderer prefabBrdr = GameObject.Find ("prefabBorder").GetComponent<SpriteRenderer> ();
+
+
+		for (int i=0; i<speeches.Length;i++) //fill cash then prem
+		{
+			print ("iteration is " + i);
+
+
+			Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition-new Vector3(0,i*yoffset,0), prefabName.transform.rotation) as Text;
+			tempTextName.transform.name = "speech"+i;
+			tempTextName.gameObject.GetComponent<RectTransform>().sizeDelta+= new Vector2 (170, 0);
+			//tempTextName.transform.gameObject.GetComponent<RectTransform>().transform.localScale += new Vector3 (170, 0, 0);
+			tempTextName.text = speeches [i].getSpeechName ();
+			tempTextName.enabled = true;
+			tempTextName.gameObject.GetComponent<BoxCollider2D> ().enabled = true;
+			tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+			Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition-new Vector3(0,i*yoffset,0), prefabCost.transform.rotation) as Text;
+			tempTextCost.text = "" + speeches[i].getCost ();
+			tempTextCost.enabled = true;
+			if (speeches[i].getCostType()=="p")
+				tempTextCost.color = new Color (1f,0.92f,0.016f,1f);
+			tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+			SpriteRenderer tempBorder = Instantiate (prefabBrdr, prefabBrdr.transform.localPosition-new Vector3(0,i*yoffset,0), prefabBrdr.transform.rotation) as SpriteRenderer;
+			tempBorder.enabled = true;
+			tempBorder.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+
+		}//end cloop
+	}
+
+
+	void purchaseSpeech(Speech speech, int speechIndex)
+	{
+
+		int childcount = GameObject.Find ("editCanvas").transform.childCount;
+		for (int i = 0; i < childcount; i++) {
+			Destroy (GameObject.Find ("editCanvas").transform.GetChild (i).gameObject);
+		}
+
+		eCanvasBox.transform.position = GameObject.Find ("prefabs").transform.position;
+
+
+		print ("in");
+		SpriteRenderer prefabIcon = GameObject.Find ("prefabIconD").GetComponent<SpriteRenderer> ();
+		Text prefabName = GameObject.Find ("prefabNameD").GetComponent<Text> ();
+		SpriteRenderer prefabLvl = GameObject.Find ("prefabLvlD").GetComponent<SpriteRenderer> ();
+		Text prefabUpgrade = GameObject.Find ("prefabUpgradeD").GetComponent<Text> ();
+		Text prefabCost = GameObject.Find ("prefabCostD").GetComponent<Text> (); 
+		Text prefabDesc = GameObject.Find ("prefabDescD").GetComponent<Text> (); 
+		Text prefabLvlDesc = GameObject.Find ("prefabLvlDescD").GetComponent<Text> (); 
+
+		//effects 1 - 4 should be in a grid, greyed out if not in use.
+		//scale 2 2
+		//position y 50 apart x 70 apart
+		if (speech.getEffects ().Contains ("p")) {
+			SpriteRenderer tempIconOne = Instantiate (prefabIcon, prefabIcon.transform.localPosition - new Vector3 (70, -40, 0), prefabIcon.transform.rotation) as SpriteRenderer;
+			tempIconOne.enabled = true;
+			tempIconOne.sprite = powerSprites [0];
+			tempIconOne.transform.localScale = new Vector3 (2, 2, 1);
+			tempIconOne.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+		}
+		if (speech.getEffects ().Contains ("w")) {
+			SpriteRenderer tempIconTwo = Instantiate (prefabIcon, prefabIcon.transform.localPosition - new Vector3 (0, -40, 0), prefabIcon.transform.rotation) as SpriteRenderer;
+			tempIconTwo.enabled = true;
+			tempIconTwo.sprite = powerSprites [1];
+			tempIconTwo.transform.localScale = new Vector3 (2, 2, 1);
+			tempIconTwo.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+		}
+		if (speech.getEffects ().Contains ("f")) {
+			SpriteRenderer tempIconThree = Instantiate (prefabIcon, prefabIcon.transform.localPosition - new Vector3 (70, 30, 0), prefabIcon.transform.rotation) as SpriteRenderer;
+			tempIconThree.enabled = true;
+			tempIconThree.sprite = powerSprites [2];
+			tempIconThree.transform.localScale = new Vector3 (2, 2, 1);
+			tempIconThree.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+		}
+		if (speech.getEffects ().Contains ("a")) {
+			SpriteRenderer tempIconFour = Instantiate (prefabIcon, prefabIcon.transform.localPosition - new Vector3 (0, 30, 0), prefabIcon.transform.rotation) as SpriteRenderer;
+			tempIconFour.enabled = true;
+			tempIconFour.sprite = powerSprites [3];
+			tempIconFour.transform.localScale = new Vector3 (2, 2, 1);
+			tempIconFour.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+		}
+		//
+
+		//name should be longer - done
+		Text tempTextName = Instantiate (prefabName, prefabName.transform.localPosition + new Vector3(85,12,0), prefabName.transform.rotation) as Text;
+		tempTextName.gameObject.GetComponent<RectTransform>().sizeDelta+= new Vector2 (170, 0);
+		//tempTextName.transform.gameObject.GetComponent<RectTransform>().transform.localScale += new Vector3 (170, 0, 0);
+		tempTextName.text = speech.getSpeechName ();
+		tempTextName.enabled = true;
+		tempTextName.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+		//change name and text
+		Text tempTextUpgrade = Instantiate (prefabUpgrade, prefabUpgrade.transform.localPosition + new Vector3(0,5,0), prefabUpgrade.transform.rotation) as Text;
+		tempTextUpgrade.enabled = true;
+		tempTextUpgrade.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+		tempTextUpgrade.name = "activate" + speechIndex;
+		tempTextUpgrade.text = "Activate";
+		tempTextUpgrade.gameObject.GetComponent<BoxCollider2D> ().enabled = true;
+
+		Text tempTextCost = Instantiate (prefabCost, prefabCost.transform.localPosition + new Vector3(50,12,0), prefabCost.transform.rotation) as Text;
+		tempTextCost.text = ""+speech.getCost();
+		tempTextCost.enabled = true;
+		if (speech.getCostType()=="p")
+			tempTextCost.color = new Color (1f,0.92f,0.016f,1f);
+		tempTextCost.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+
+		Text tempTextDesc = Instantiate (prefabDesc, prefabDesc.transform.localPosition + new Vector3 (80,10,0), prefabDesc.transform.rotation) as Text;
+		tempTextDesc.enabled = true;
+		tempTextDesc.text = speech.getDescription ();
+		tempTextDesc.gameObject.GetComponent<RectTransform>().sizeDelta+= new Vector2 (150, 0);
+		tempTextDesc.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+		//use level to say duration
+		Text tempTextLvlDesc = Instantiate (prefabLvlDesc, prefabLvlDesc.transform.localPosition + new Vector3(100,0,0), prefabLvlDesc.transform.rotation) as Text;
+		tempTextLvlDesc.enabled = true;
+		tempTextLvlDesc.text = "Duration:" + speech.getDuration();
+		tempTextLvlDesc.transform.SetParent (GameObject.Find ("editCanvas").transform, false);
+
+
+
+	}
+	/**end of menus stuff**/
 	/**ticker methods***/
 
 	public void initTick() //fill ticker string array
@@ -950,7 +1122,7 @@ public class mainscript : MonoBehaviour
 		premWords = new Word[3]{
 			new Word("terror",wordSprites[5],premCost,0f,defMVal,defCSV,"High value, but reduces budget",new string[]{"Get word","More Value","Less Cost","More Value"}),
 			new Word("usa",wordSprites[6],premCost,0f,defMVal,defCSV, "Value increases as level increases",new string[]{"Get word","More Value","Higher bonus","More Value"}),
-				new Word("cash3",wordSprites[7],premCost,0f,defMVal,defCSV,"No value, but double budget",new string[]{"Get word","More Budget","More Budget","More Budget"})};
+			new Word("cash3",wordSprites[7],premCost,0f,defMVal,defCSV,"No value, but double budget",new string[]{"Get word","More Budget","More Budget","More Budget"})};
 		cashWords = new Word[8]{
 			new Word("ok",wordSprites[0],basicCost,1,defMVal,defCSV,"Just OK",new string[]{"Get word","More Value","More Budget","More Value"}),
 			new Word("no",wordSprites[1],basicCost,1,defMVal,defCSV,"Basic rebuttal, nullify words",new string[]{"Get word","More Effective","More Effective","More Effective"}),
@@ -962,25 +1134,80 @@ public class mainscript : MonoBehaviour
 			new Word("global",wordSprites[10],cashCost,0,defMVal,defCSV,"Bum people out, reduce word values",new string[]{"Get word","More Effective","More Effective","More Effective"})};
 		myWords  = new Word[5] {cashWords[0],cashWords[1],cashWords[2],cashWords[3],cashWords[4]};
 	}
+	//speeches
+	public void initSpeeches ()
+	{
+		speeches = new Speech[2] {
+
+			new Speech ("Gina the Landscaper", "c", 50, 30, "p", "Relate to the people by talking about your blue color 'friend'."),
+			new Speech ("Hardline on Immigrates", "c", 50, 30, "w", "Get extra media coverage by being aggressively controversial on immigrants.")
+		};
+	}
 
 	//powerups
 
-	IEnumerator activatePowerup(string powerup, float time){
+	void activateSpeech(Speech speech, int speechIndex){
+		//check and take money
+		if (speech.getCostType () == "c") {
+			if (curFund >= speech.getCost ()) {
+				//have enough cash, proceed
+				print("have enoug cash, proceed");
+				curFund -= speech.getCost ();
+				//string parameters = "activatePower" + speechIndex + ")";
+				IEnumerator parameters = activatePower(speechIndex);
+				StartCoroutine(parameters);
 
-		if (powerup == "bonusCash") {
-			cshMltplr +=1;
-			yield
-			return new WaitForSeconds (time);
-			cshMltplr -=1;
+			
+			}
 		}
-		else if (powerup == "doubleClick") {
-			dbleClick = true;
-			yield
-			return new WaitForSeconds (time);
-			dbleClick = false;
+		if (speech.getCostType () == "p") {
+			if (curGold>= speech.getCost()){
+				//have enough gold, proceed
+				curGold-=speech.getCost();
+				string parameters = "activatePower(" + speechIndex + ")";
+				StartCoroutine(parameters);
+			}
+		}
+			
+	}
+
+	IEnumerator activatePower(int speechIndex)
+	{
+		print ("in power thing");
+		string activated = "";
+		//activate power
+		if (speeches[speechIndex].getEffects().Contains ("p")) {
+			if (!dblePwr) {
+				dblePwr = true;
+				cshMltplr += 1;
+				artic += 1;
+				print ("activated power");
+				activated += "p";
+			}
+
+		}
+		if (speeches[speechIndex].getEffects().Contains ("w")) {
+			if (!dbleClick) {
+				dbleClick = true;
+				print ("activated double");
+				activated += "w";
+			}
 
 		} 
+		yield
+		return new WaitForSeconds (speeches[speechIndex].getDuration());
 
+		if (activated.Contains ("p")) {
+			cshMltplr -=1;
+			artic -= 1;
+			dblePwr = false;
+			print ("deactivated power");
+
+		}
+		if (activated.Contains ("w")) {
+			dbleClick = false;
+			print ("deactivated double");
+		}
 	}
 
 
@@ -1081,5 +1308,54 @@ public class Word
 	public string getLvlDesc(int index)
 	{
 		return lvlDesc [index];
+	}
+}
+//end of word node
+
+
+public class Speech
+{
+	string name;
+	string costType;
+	float cost;
+	float duration;
+	string effects;
+	string description;
+
+	public Speech(string iWordName, string iCostType, float iCost, float iDuration, string iEffects, string iDescription)
+	{
+		name = iWordName;
+		costType = iCostType;
+		cost = iCost;
+		duration = iDuration;
+		effects = iEffects;
+		description = iDescription;
+	}
+
+	public string getSpeechName()
+	{
+		return name;
+	}
+
+	public string getCostType()
+	{
+		return costType;
+	}
+	public float getCost()
+	{
+		return cost;
+	}
+
+	public float getDuration()
+	{
+		return duration;
+	}
+	public string getEffects()
+	{
+		return effects;
+	}
+	public string getDescription()
+	{
+		return description;
 	}
 }
